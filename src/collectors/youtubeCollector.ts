@@ -28,6 +28,7 @@ export interface VideoMetrics {
   views: number;
   likes: number;
   comments: number;
+  shares?: number;
 }
 
 export interface AuthorChannelInfo {
@@ -96,11 +97,11 @@ export class YouTubeCollector {
       const response = await fetch(url);
       
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
-        throw new Error(`YouTube API error: ${error.error?.message || response.statusText}`);
+        const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } })) as any;
+        throw new Error(`YouTube API error: ${error?.error?.message || response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       if (!data.items || data.items.length === 0) {
         throw new Error('Channel not found');
@@ -213,11 +214,11 @@ export class YouTubeCollector {
       const response = await fetch(url);
 
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
-        throw new Error(`YouTube API error: ${error.error?.message || response.statusText}`);
+        const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } })) as any;
+        throw new Error(`YouTube API error: ${error?.error?.message || response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       if (!data.items || data.items.length === 0) {
         throw new Error('Video not found');
@@ -249,11 +250,11 @@ export class YouTubeCollector {
       const response = await fetch(url);
 
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
-        throw new Error(`YouTube API error: ${error.error?.message || response.statusText}`);
+        const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } })) as any;
+        throw new Error(`YouTube API error: ${error?.error?.message || response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       if (!data.items || data.items.length === 0) {
         throw new Error('Video not found');

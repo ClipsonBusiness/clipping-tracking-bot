@@ -541,7 +541,7 @@ router.post('/:id/verify', async (req: Request, res: Response) => {
       if (verificationResult.ok) {
         // Update social account with verified information
         // Normalize userId to string to ensure consistent format
-        const platformUserId = String(verificationResult.userId || verificationResult.channelId || '');
+        const platformUserId = String((verificationResult as any).userId || (verificationResult as any).channelId || '');
         
         console.log(`[Social Account Verify] Setting platformUserId to: ${platformUserId} for ${socialAccount.platform} account ${id}`);
         

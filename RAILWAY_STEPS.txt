@@ -1,0 +1,42 @@
+🚂 RAILWAY DEPLOYMENT - 5 STEPS
+
+STEP 1: Push to GitHub
+-----------------------
+git init
+git add .
+git commit -m "Ready for Railway"
+git remote add origin <your-repo-url>
+git push -u origin main
+
+STEP 2: Go to Railway
+-----------------------
+👉 https://railway.app
+👉 Click "New Project"
+👉 Click "Deploy from GitHub repo"
+👉 Select your repo
+
+STEP 3: Add PostgreSQL
+-----------------------
+👉 Click "+ New" button
+👉 Select "Database" → "PostgreSQL"
+✅ DATABASE_URL auto-filled!
+
+STEP 4: Add Redis
+-----------------------
+👉 Click "+ New" button
+👉 Select "Database" → "Redis"
+✅ REDIS_URL auto-filled!
+
+STEP 5: Set Environment Variables
+-----------------------
+👉 Click on your web service
+👉 Go to "Variables" tab
+👉 Add:
+   YOUTUBE_API_KEY=<your-youtube-api-key>
+   APIFY_API_KEY=<your-apify-api-key>
+   SOCIAVAULT_API_KEY=<your-sociavault-api-key>
+   BASE_URL=<your-railway-url>
+   NODE_ENV=production
+   PORT=3001
+
+✅ DONE! Railway will auto-deploy!

@@ -137,7 +137,7 @@ router.get('/submissions', async (req: Request, res: Response) => {
     });
 
     // Create a map of userId -> platform -> handle for quick lookup
-    const handleMap = new Map<string, Map<Platform, string>>();
+    const handleMap = new Map<string, Map<string, string>>();
     socialAccounts.forEach(account => {
       if (!handleMap.has(account.userId)) {
         handleMap.set(account.userId, new Map());
