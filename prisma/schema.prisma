@@ -1,0 +1,83 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// SQLite doesn't support enums, using String with @default
+model User {
+  id            String          @id @default(cuid())
+  email         String          @unique
+  role          String          @default("CLIPPER") // CLIPPER | ADMIN
+  createdAt     DateTime        @default(now())
+  socialAccounts SocialAccount[]
+  submissions   Submission[]
+}
+
+model SocialAccount {
+  id                   String   @id @default(cuid())
+  userId               String
+  platform             String   // YOUTUBE
+  handle               String
+  platformUserId       String
+  profileUrl           String?
+  verificationCode     String?
+  verificationExpiresAt DateTime?
+  verifiedAt           DateTime?
+  status               String   @default("PENDING") // PENDING | VERIFIED | FAILED
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, platform, handle])
+  @@index([userId])
+  @@index([platform, handle])
+}
+
+model Submission {
+  id                  String           @id @default(cuid())
+  userId              String
+  platform            String           // YOUTUBE
+  contentId           String
+  canonicalUrl        String?
+  authorPlatformUserId String?
+  status              String           @default("PENDING") // PENDING | APPROVED | REJECTED | REMOVED
+  rejectionReason     String?
+  latestViews         Int              @default(0)
+  latestLikes         Int              @default(0)
+  latestComments      Int              @default(0)
+  latestShares        Int              @default(0)
+  lastMetricsAt       DateTime?
+  viewsAtApproval     Int?
+  approvedAt          DateTime?
+  approvedBy          String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  user                User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  metricSnapshots     MetricSnapshot[]
+
+  @@unique([platform, contentId])
+  @@index([userId])
+  @@index([status])
+  @@index([platform, status])
+}
+
+model MetricSnapshot {
+  id          String     @id @default(cuid())
+  submissionId String
+  capturedAt  DateTime   @default(now())
+  views       Int        @default(0)
+  likes       Int        @default(0)
+  comments    Int        @default(0)
+  shares      Int        @default(0)
+  submission  Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId, capturedAt])
+  @@index([submissionId])
+}

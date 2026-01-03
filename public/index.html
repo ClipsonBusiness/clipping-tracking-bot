@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clipping Tracking Bot - API Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-bottom: 30px;
+        }
+        .status.online {
+            background: #10b981;
+            color: white;
+        }
+        .status.offline {
+            background: #ef4444;
+            color: white;
+        }
+        .section {
+            margin-bottom: 40px;
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+        .section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        .endpoint {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        .endpoint-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .method {
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.85em;
+        }
+        .method.get { background: #10b981; color: white; }
+        .method.post { background: #3b82f6; color: white; }
+        .method.put { background: #f59e0b; color: white; }
+        .method.delete { background: #ef4444; color: white; }
+        .path {
+            font-family: 'Courier New', monospace;
+            color: #333;
+            font-weight: 500;
+        }
+        .description {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 8px;
+        }
+        .test-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+        .test-btn:hover {
+            background: #5568d3;
+        }
+        .response {
+            margin-top: 15px;
+            padding: 15px;
+            background: #1f2937;
+            color: #10b981;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+        .response.show {
+            display: block;
+        }
+        .response.error {
+            color: #ef4444;
+        }
+        code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .submissions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 24px;
+            margin-top: 24px;
+        }
+        .submission-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+            border: 1px solid #e5e7eb;
+        }
+        .submission-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+        .submission-card-header {
+            padding: 16px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .submission-creator-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+        .creator-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1.1em;
+            flex-shrink: 0;
+        }
+        .creator-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .creator-handle {
+            font-weight: 600;
+            color: #111;
+            font-size: 0.95em;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .creator-name {
+            color: #6b7280;
+            font-size: 0.85em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .submission-status {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+        }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-approved { background: #d1fae5; color: #065f46; }
+        .status-rejected { background: #fee2e2; color: #991b1b; }
+        .status-removed { background: #f3f4f6; color: #374151; }
+        .platform-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: rgba(0,0,0,0.7);
+            padding: 6px 10px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 10;
+        }
+        .platform-badge svg {
+            width: 16px;
+            height: 16px;
+        }
+        .platform-badge span {
+            color: white;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+        .submission-video {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 aspect ratio */
+            background: #000;
+            overflow: hidden;
+        }
+        .submission-video iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .submission-video-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: white;
+        }
+        .video-stats-overlay {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            background: rgba(0,0,0,0.7);
+            padding: 6px 10px;
+            border-radius: 6px;
+            color: white;
+            font-size: 0.85em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 10;
+        }
+        .submission-content {
+            padding: 16px;
+        }
+        .submission-metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #f3f4f6;
+        }
+        .metric-item {
+            text-align: center;
+            padding: 8px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+        .metric-value {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #111;
+            line-height: 1.2;
+        }
+        .metric-label {
+            font-size: 0.7em;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+        .submission-footer {
+            padding: 12px 16px;
+            background: #f9fafb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85em;
+            color: #6b7280;
+            border-top: 1px solid #f3f4f6;
+        }
+        .filter-bar {
+            display: flex;
+            gap: 16px;
+            align-items: flex-end;
+            padding: 16px;
+            background: #f9fafb;
+            border-radius: 8px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .filter-label {
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #333;
+        }
+        .filter-select,
+        .filter-input {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.9em;
+            background: white;
+            min-width: 140px;
+        }
+        .filter-select {
+            cursor: pointer;
+        }
+        .filter-search {
+            flex: 1;
+            min-width: 200px;
+        }
+        .filter-input {
+            width: 100%;
+        }
+        .filter-reset {
+            min-width: auto;
+        }
+        .reset-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.9em;
+            font-weight: 500;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .reset-btn:hover {
+            background: #f3f4f6;
+            border-color: #9ca3af;
+        }
+        .engagement-badge {
+            background: #eff6ff;
+            color: #1e40af;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.8em;
+        }
+        .view-profile-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: background 0.2s;
+        }
+        .view-profile-btn:hover {
+            background: #dc2626;
+        }
+        .card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #f3f4f6;
+        }
+        .action-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.85em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .approve-btn {
+            background: #10b981;
+            color: white;
+        }
+        .approve-btn:hover {
+            background: #059669;
+        }
+        .reject-btn {
+            background: #ef4444;
+            color: white;
+        }
+        .reject-btn:hover {
+            background: #dc2626;
+        }
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .details-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            width: 100%;
+            margin-top: 8px;
+        }
+        .details-btn:hover {
+            background: #5568d3;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 {
+            margin: 0;
+            color: #333;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+        .modal-close:hover {
+            background: #f3f4f6;
+        }
+        .modal-body {
+            padding: 20px;
+        }
+        .detail-section {
+            margin-bottom: 24px;
+        }
+        .detail-section h4 {
+            color: #333;
+            margin-bottom: 12px;
+            font-size: 1.1em;
+        }
+        .detail-row {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 12px;
+            padding: 8px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #666;
+            font-size: 0.9em;
+        }
+        .detail-value {
+            color: #333;
+        }
+        .rejection-reason {
+            background: #fee2e2;
+            border-left: 4px solid #ef4444;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 8px;
+        }
+        .snapshots-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 12px;
+        }
+        .snapshot-item {
+            display: grid;
+            grid-template-columns: 150px repeat(4, 1fr);
+            gap: 12px;
+            padding: 8px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 0.9em;
+        }
+        .snapshot-item:last-child {
+            border-bottom: none;
+        }
+        .snapshot-header {
+            font-weight: 600;
+            color: #666;
+            padding: 8px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Clipping Tracking Bot</h1>
+        <p class="subtitle">Backend API Test Interface</p>
+        <div id="status" class="status offline">Checking server status...</div>
+
+        <div class="section">
+            <h2>📊 Server Status</h2>
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method get">GET</span>
+                    <span class="path">/health</span>
+                </div>
+                <div class="description">Check if the server is running and healthy</div>
+                <button class="test-btn" onclick="testHealth()">Test Health Endpoint</button>
+                <pre class="response" id="health-response"></pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>👤 Social Account Management</h2>
+            
+            <!-- Create Social Account -->
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method post">POST</span>
+                    <span class="path">/api/social-accounts/:platform</span>
+                </div>
+                <div class="description">Verify your social account</div>
+                <div style="margin-top: 10px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <select id="social-platform" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="youtube">YouTube</option>
+                        <option value="tiktok">TikTok</option>
+                        <option value="instagram">Instagram</option>
+                    </select>
+                    <input type="text" id="social-handle" placeholder="@username" style="padding: 8px; width: 200px; border: 1px solid #ddd; border-radius: 4px;">
+                    <button class="test-btn" onclick="testCreateSocialAccount()">Verify Account</button>
+                </div>
+                <pre class="response" id="social-account-response"></pre>
+            </div>
+
+            <!-- Verify Social Account -->
+            <div class="endpoint" style="margin-top: 20px;">
+                <div class="endpoint-header">
+                    <span class="method post">POST</span>
+                    <span class="path">/api/social-accounts/:id/verify</span>
+                </div>
+                <div class="description">
+                    <strong>Check Account</strong> - Verify if you've added the code to your account
+                </div>
+                <div style="margin-top: 10px;">
+                    <button class="test-btn" onclick="loadMyAccounts()" style="background: #667eea; margin-right: 10px;">📋 List My Accounts</button>
+                    <input type="text" id="social-account-id" placeholder="Social Account ID" style="padding: 8px; width: 300px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 0.9em;">
+                    <button class="test-btn" onclick="testVerifySocialAccount()" style="background: #10b981;">✓ Check Account</button>
+                </div>
+                <div id="my-accounts-list" style="margin-top: 10px; display: none;"></div>
+                <div style="margin-top: 10px; padding: 10px; background: #f0f9ff; border-radius: 6px; font-size: 0.9em; color: #0369a1;">
+                    <strong>How it works:</strong> After creating an account, you'll get a verification code. Add it to your account bio/description, then click "Check Account" to verify.
+                </div>
+                <pre class="response" id="verify-account-response"></pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📹 Submit Content</h2>
+            
+            <!-- Auto-detect submission -->
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method post">POST</span>
+                    <span class="path">/api/submissions/auto</span>
+                </div>
+                <div class="description">
+                    Submit content for tracking. Platform is automatically detected from URL. Requires a verified account matching the content author.
+                </div>
+                <div style="margin-top: 10px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <input type="text" id="content-url" placeholder="Paste any YouTube, TikTok, or Instagram URL..." style="padding: 8px; flex: 1; min-width: 300px; border: 1px solid #ddd; border-radius: 4px;">
+                    <button class="test-btn" onclick="window.testSubmitContentAuto()" style="background: #10b981;">🚀 Submit</button>
+                </div>
+                <div id="detected-platform" style="margin-top: 8px; font-size: 0.85em; color: #666; display: none;">
+                    <span style="font-weight: 500;">Detected platform:</span> <span id="platform-name" style="color: #667eea; font-weight: 600;"></span>
+                </div>
+                <div style="margin-top: 10px; padding: 10px; background: #f0fdf4; border-radius: 6px; font-size: 0.9em; color: #166534; border-left: 3px solid #10b981;">
+                    <strong>✨ Auto-detect:</strong> Just paste the URL - we'll detect YouTube, TikTok, or Instagram automatically!
+                </div>
+                <pre class="response" id="submission-response"></pre>
+            </div>
+
+            <!-- Batch Submission -->
+            <div class="endpoint" style="margin-top: 20px;">
+                <div class="endpoint-header">
+                    <span class="method post">POST</span>
+                    <span class="path">/api/submissions/:platform/batch</span>
+                </div>
+                <div class="description">
+                    Submit multiple content URLs at once (up to 50). More efficient for bulk submissions.
+                </div>
+                <div style="margin-top: 10px;">
+                    <textarea id="batch-urls" placeholder="Enter URLs (one per line) - Platform auto-detected!&#10;Example:&#10;https://www.tiktok.com/@user/video/123&#10;https://www.youtube.com/watch?v=abc123&#10;https://www.instagram.com/p/xyz789/" style="width: 100%; min-height: 120px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 0.9em; resize: vertical;"></textarea>
+                    <div style="margin-top: 10px; display: flex; gap: 10px; align-items: center;">
+                        <button class="test-btn" onclick="testBatchSubmit()" style="background: #667eea;">📦 Submit Batch</button>
+                        <span id="batch-url-count" style="color: #666; font-size: 0.9em;"></span>
+                    </div>
+                </div>
+                <div style="margin-top: 10px; padding: 10px; background: #f0fdf4; border-radius: 6px; font-size: 0.9em; color: #166534; border-left: 3px solid #10b981;">
+                    <strong>💡 Tip:</strong> Batch submission processes 5 URLs at a time to avoid rate limits. Same total cost as individual submissions!
+                </div>
+                <div id="batch-results" style="margin-top: 15px; display: none;"></div>
+                <pre class="response" id="batch-response" style="display: none;"></pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>👑 Admin Endpoints</h2>
+            <p style="color: #666; margin-bottom: 15px; font-size: 0.9em;">
+                Admin-only endpoints (requires <code>x-user-role: ADMIN</code>)
+            </p>
+            
+            <!-- List Submissions -->
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method get">GET</span>
+                    <span class="path">/admin/submissions</span>
+                </div>
+                
+                <!-- Filter Bar -->
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <label class="filter-label">Status</label>
+                        <select id="admin-status" class="filter-select">
+                            <option value="">All Status</option>
+                            <option value="PENDING">PENDING</option>
+                            <option value="APPROVED">APPROVED</option>
+                            <option value="REJECTED">REJECTED</option>
+                            <option value="REMOVED">REMOVED</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Platform</label>
+                        <select id="admin-platform" class="filter-select">
+                            <option value="">All Platforms</option>
+                            <option value="YOUTUBE">YouTube</option>
+                            <option value="TIKTOK">TikTok</option>
+                            <option value="INSTAGRAM">Instagram</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Sort By</label>
+                        <select id="admin-sort" class="filter-select">
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="views-desc">Most Views</option>
+                            <option value="views-asc">Least Views</option>
+                        </select>
+                    </div>
+                    <div class="filter-group filter-search">
+                        <label class="filter-label">Search</label>
+                        <input type="text" id="admin-search" class="filter-input" placeholder="Search creator, campaign...">
+                    </div>
+                    <div class="filter-group filter-reset">
+                        <label class="filter-label" style="opacity: 0;">Reset</label>
+                        <button class="reset-btn" onclick="window.resetFilters()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                                <path d="M21 3v5h-5"></path>
+                                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                                <path d="M3 21v-5h5"></path>
+                            </svg>
+                            Reset
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Summary Stats -->
+                <div id="summary-stats" style="margin-top: 20px; display: none;">
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+                        <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #667eea;">
+                            <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">Total Submissions</div>
+                            <div style="font-size: 1.5em; font-weight: bold; color: #333;" id="stat-total">-</div>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981;">
+                            <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">Approved</div>
+                            <div style="font-size: 1.5em; font-weight: bold; color: #333;" id="stat-approved">-</div>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+                            <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">Total Views</div>
+                            <div style="font-size: 1.5em; font-weight: bold; color: #333;" id="stat-views">-</div>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b;">
+                            <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">Engagement Rate</div>
+                            <div style="font-size: 1.5em; font-weight: bold; color: #333;" id="stat-engagement">-</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Submissions Grid -->
+                <div id="submissions-grid" class="submissions-grid"></div>
+                
+                <pre class="response" id="admin-list-response" style="display: none;"></pre>
+            </div>
+
+        </div>
+
+        <div class="section">
+            <h2>📝 API Information</h2>
+            <p style="color: #666; line-height: 1.6;">
+                This is a test interface for the Clipping Tracking Bot backend API.<br>
+                The server is running on <code>http://localhost:3001</code><br><br>
+                <strong>Note:</strong> Most endpoints require authentication headers (<code>x-user-id</code> and <code>x-user-role</code>).<br>
+                Admin endpoints require <code>x-user-role: ADMIN</code>.<br>
+                For full API documentation, see <code>API_REFERENCE.md</code>
+            </p>
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div id="details-modal" class="modal" onclick="if(event.target === this) window.closeDetailsModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>Submission Details</h3>
+                <button class="modal-close" onclick="window.closeDetailsModal()">×</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <div style="text-align: center; padding: 40px; color: #666;">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001';
+
+        async function checkStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('status').textContent = `✅ Server Online - ${data.timestamp}`;
+                    document.getElementById('status').className = 'status online';
+                } else {
+                    throw new Error('Server not responding');
+                }
+            } catch (error) {
+                document.getElementById('status').textContent = '❌ Server Offline';
+                document.getElementById('status').className = 'status offline';
+            }
+        }
+
+        async function testHealth() {
+            const responseEl = document.getElementById('health-response');
+            responseEl.classList.add('show');
+            responseEl.textContent = 'Testing...';
+            responseEl.className = 'response show';
+
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                responseEl.textContent = JSON.stringify(data, null, 2);
+                responseEl.className = 'response show';
+            } catch (error) {
+                responseEl.textContent = `Error: ${error.message}`;
+                responseEl.className = 'response show error';
+            }
+        }
+
+        async function testCreateSocialAccount() {
+            const platform = document.getElementById('social-platform').value;
+            const handle = document.getElementById('social-handle').value;
+            const responseEl = document.getElementById('social-account-response');
+            responseEl.classList.add('show');
+            responseEl.textContent = 'Creating account...';
+            responseEl.className = 'response show';
+
+            if (!handle) {
+                responseEl.textContent = `Please enter a ${platform} handle`;
+                responseEl.className = 'response show error';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/social-accounts/${platform}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-user-id': 'test-user-123',
+                        'x-user-role': 'CLIPPER'
+                    },
+                    body: JSON.stringify({ handle })
+                });
+
+                const data = await response.json();
+                
+                // If successful or existing account, show ONLY the code and "Put this in bio"
+                if ((response.ok || response.status === 409) && data.code) {
+                    const accountIdInput = document.getElementById('social-account-id');
+                    if (accountIdInput && data.socialAccountId) {
+                        accountIdInput.value = data.socialAccountId;
+                    }
+                    
+                    // Clean, simple output - ONLY code and message
+                    responseEl.innerHTML = `
+                        <div style="text-align: center; padding: 20px;">
+                            <div style="font-size: 2em; font-weight: bold; color: #10b981; margin-bottom: 15px; font-family: monospace; letter-spacing: 2px;">
+                                ${data.code}
+                            </div>
+                            <div style="font-size: 1.1em; color: #333; font-weight: 500;">
+                                Put this in bio
+                            </div>
+                        </div>
+                    `;
+                    responseEl.className = 'response show';
+                }
+                // Error cases
+                else {
+                    let output = `Status: ${response.status} ${response.statusText}\n\n`;
+                    output += JSON.stringify(data, null, 2);
+                    
+                    if (response.status === 503 && data.error === 'Database not configured') {
+                        output += '\n\n⚠️ Database is not configured. Set DATABASE_URL in your .env file.';
+                    }
+                    
+                    responseEl.textContent = output;
+                    responseEl.className = 'response show error';
+                }
+            } catch (error) {
+                responseEl.textContent = `Error: ${error.message}`;
+                responseEl.className = 'response show error';
+            }
+        }
+
+        async function loadMyAccounts() {
+            const listEl = document.getElementById('my-accounts-list');
+            listEl.style.display = 'block';
+            listEl.innerHTML = '<div style="padding: 10px; color: #666;">Loading your accounts...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/social-accounts`, {
+                    headers: {
+                        'x-user-id': 'test-user-123',
+                        'x-user-role': 'CLIPPER'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.accounts) {
+                    if (data.accounts.length === 0) {
+                        listEl.innerHTML = '<div style="padding: 10px; color: #666;">No accounts found. Create one above!</div>';
+                    } else {
+                        let html = '<div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e5e7eb;">';
+                        html += '<h4 style="margin-bottom: 10px;">Your Accounts:</h4>';
+                        html += '<div style="display: grid; gap: 8px;">';
+                        data.accounts.forEach(acc => {
+                            const statusColor = acc.status === 'VERIFIED' ? '#10b981' : acc.status === 'PENDING' ? '#f59e0b' : '#ef4444';
+                            html += `
+                                <div style="padding: 10px; background: #f9fafb; border-radius: 4px; border-left: 3px solid ${statusColor};">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div>
+                                            <strong>${acc.platform}</strong> - @${acc.handle}
+                                            <span style="color: ${statusColor}; font-weight: 600; margin-left: 8px;">${acc.status}</span>
+                                        </div>
+                                        <button onclick="document.getElementById('social-account-id').value='${acc.id}'; loadMyAccounts();" style="padding: 4px 8px; background: #667eea; color: white; border: none; border-radius: 4px; font-size: 0.8em; cursor: pointer;">Use This ID</button>
+                                    </div>
+                                    <div style="font-size: 0.85em; color: #666; margin-top: 4px; font-family: monospace;">
+                                        ID: ${acc.id}<br>
+                                        ${acc.platformUserId ? `User ID: ${acc.platformUserId}` : 'User ID: Not set'}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        html += '</div></div>';
+                        listEl.innerHTML = html;
+                    }
+                } else {
+                    listEl.innerHTML = `<div style="padding: 10px; color: #ef4444;">Error: ${data.error || 'Failed to load accounts'}</div>`;
+                }
+            } catch (error) {
+                listEl.innerHTML = `<div style="padding: 10px; color: #ef4444;">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testVerifySocialAccount() {
+            const accountId = document.getElementById('social-account-id').value;
+            const responseEl = document.getElementById('verify-account-response');
+            responseEl.classList.add('show');
+            responseEl.textContent = 'Checking account...';
+            responseEl.className = 'response show';
+
+            if (!accountId) {
+                responseEl.textContent = 'Please enter a Social Account ID';
+                responseEl.className = 'response show error';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/social-accounts/${accountId}/verify`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-user-id': 'test-user-123',
+                        'x-user-role': 'CLIPPER'
+                    }
+                });
+
+                const data = await response.json();
+                let output = `Status: ${response.status} ${response.statusText}\n\n`;
+                output += JSON.stringify(data, null, 2);
+                
+                if (response.ok && data.socialAccount?.status === 'VERIFIED') {
+                    output += '\n\n✅ Account verified successfully!';
+                } else if (response.status === 400) {
+                    // Get platform from the error message or default
+                    const platformHint = data.message?.includes('TikTok') ? 'TikTok bio' : 
+                                        data.message?.includes('Instagram') ? 'Instagram bio' : 
+                                        'YouTube channel description';
+                    output += `\n\n⚠️ Verification failed. Make sure you added the code to your ${platformHint}.`;
+                    
+                    // If it's an API configuration error, provide helpful info
+                    if (data.message?.includes('API integration not configured') || data.message?.includes('ACCESS_TOKEN is required')) {
+                        output += '\n\n📝 Note: This platform requires API configuration. Please set up the API access token in your .env file.';
+                    }
+                }
+                
+                responseEl.textContent = output;
+                responseEl.className = response.ok ? 'response show' : 'response show error';
+            } catch (error) {
+                responseEl.textContent = `Error: ${error.message}`;
+                responseEl.className = 'response show error';
+            }
+        }
+
+        // Platform detection function
+        window.detectPlatform = function(url) {
+            if (!url) return null;
+            const urlLower = url.toLowerCase();
+            if (urlLower.includes('youtube.com') || urlLower.includes('youtu.be')) return 'YouTube';
+            if (urlLower.includes('tiktok.com')) return 'TikTok';
+            if (urlLower.includes('instagram.com')) return 'Instagram';
+            return null;
+        }
+
+        // Auto-detect platform as user types
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlInput = document.getElementById('content-url');
+            const platformIndicator = document.getElementById('detected-platform');
+            const platformName = document.getElementById('platform-name');
+            
+            if (urlInput && platformIndicator && platformName) {
+                urlInput.addEventListener('input', function() {
+                    const url = urlInput.value.trim();
+                    const platform = window.detectPlatform(url);
+                    if (platform) {
+                        platformIndicator.style.display = 'block';
+                        platformName.textContent = platform;
+                    } else {
+                        platformIndicator.style.display = 'none';
+                    }
+                });
+            }
+        });
+
+        window.testSubmitContentAuto = async function() {
+            const url = document.getElementById('content-url').value;
+            const responseEl = document.getElementById('submission-response');
+            responseEl.classList.add('show');
+            responseEl.textContent = 'Detecting platform and submitting...';
+            responseEl.className = 'response show';
+
+            if (!url) {
+                responseEl.textContent = 'Please enter a URL';
+                responseEl.className = 'response show error';
+                return;
+            }
+
+            // Detect platform for user feedback
+            const detectedPlatform = window.detectPlatform(url);
+            if (!detectedPlatform) {
+                responseEl.textContent = 'Could not detect platform. Please use a YouTube, TikTok, or Instagram URL.';
+                responseEl.className = 'response show error';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/submissions/auto`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-user-id': 'test-user-123',
+                        'x-user-role': 'CLIPPER'
+                    },
+                    body: JSON.stringify({ url })
+                });
+
+                const data = await response.json();
+                let output = `Status: ${response.status} ${response.statusText}\n\n`;
+                output += JSON.stringify(data, null, 2);
+                
+                if (response.ok) {
+                    output += `\n\n✅ ${detectedPlatform} content submitted successfully! Metrics will be tracked automatically 2x per day.`;
+                } else if (response.status === 400) {
+                    output += `\n\n⚠️ Error: ${data.message || data.error || 'Failed to submit content'}`;
+                    if (data.details) {
+                        output += `\n\n📋 Details: ${data.details.substring(0, 200)}`;
+                    }
+                } else if (response.status === 403) {
+                    output += `\n\n⚠️ Author mismatch. Make sure the content is from your verified ${detectedPlatform} account.`;
+                } else if (response.status === 409) {
+                    output += '\n\nℹ️ This content has already been submitted.';
+                }
+                
+                responseEl.textContent = output;
+                responseEl.className = response.ok ? 'response show' : 'response show error';
+            } catch (error) {
+                responseEl.textContent = `Error: ${error.message}`;
+                responseEl.className = 'response show error';
+            }
+        }
+
+
+        // Update URL count as user types
+        document.addEventListener('DOMContentLoaded', function() {
+            const batchUrlsEl = document.getElementById('batch-urls');
+            const batchUrlCountEl = document.getElementById('batch-url-count');
+            
+            if (batchUrlsEl && batchUrlCountEl) {
+                batchUrlsEl.addEventListener('input', function() {
+                    const urls = batchUrlsEl.value.split('\n')
+                        .map(url => url.trim())
+                        .filter(url => url.length > 0);
+                    const count = urls.length;
+                    batchUrlCountEl.textContent = count > 0 ? `${count} URL${count !== 1 ? 's' : ''} ready` : '';
+                });
+            }
+        });
+
+        window.testBatchSubmit = async function() {
+            const urlsText = document.getElementById('batch-urls').value;
+            const resultsEl = document.getElementById('batch-results');
+            const responseEl = document.getElementById('batch-response');
+
+            // Parse URLs from textarea (one per line)
+            const urls = urlsText.split('\n')
+                .map(url => url.trim())
+                .filter(url => url.length > 0);
+
+            if (urls.length === 0) {
+                resultsEl.style.display = 'block';
+                resultsEl.innerHTML = '<div style="padding: 15px; background: #fef2f2; border-radius: 6px; color: #dc2626; border-left: 3px solid #ef4444;">⚠️ Please enter at least one URL</div>';
+                return;
+            }
+
+            if (urls.length > 50) {
+                resultsEl.style.display = 'block';
+                resultsEl.innerHTML = '<div style="padding: 15px; background: #fef2f2; border-radius: 6px; color: #dc2626; border-left: 3px solid #ef4444;">⚠️ Maximum 50 URLs per batch</div>';
+                return;
+            }
+
+            // Show loading state
+            const totalUrls = urls.length;
+            resultsEl.style.display = 'block';
+            resultsEl.innerHTML = `
+                <div style="padding: 15px; background: #f0f9ff; border-radius: 6px; color: #0369a1; border-left: 3px solid #3b82f6;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="border: 2px solid #e5e7eb; border-top: 2px solid #3b82f6; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite;"></div>
+                        <span>Processing ${totalUrls} URL${totalUrls !== 1 ? 's' : ''} (auto-detecting platforms)...</span>
+                    </div>
+                </div>
+            `;
+            responseEl.style.display = 'none';
+
+            // Process each platform group separately
+            const allResults = [];
+            
+            try {
+                // Process YouTube URLs
+                if (urlGroups.youtube.length > 0) {
+                    const response = await fetch(`${API_BASE}/api/submissions/youtube/batch`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-user-id': 'test-user-123',
+                            'x-user-role': 'CLIPPER'
+                        },
+                        body: JSON.stringify({ urls: urlGroups.youtube })
+                    });
+                    const data = await response.json();
+                    if (data.results) allResults.push(...data.results);
+                }
+                
+                // Process TikTok URLs
+                if (urlGroups.tiktok.length > 0) {
+                    const response = await fetch(`${API_BASE}/api/submissions/tiktok/batch`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-user-id': 'test-user-123',
+                            'x-user-role': 'CLIPPER'
+                        },
+                        body: JSON.stringify({ urls: urlGroups.tiktok })
+                    });
+                    const data = await response.json();
+                    if (data.results) allResults.push(...data.results);
+                }
+                
+                // Process Instagram URLs
+                if (urlGroups.instagram.length > 0) {
+                    const response = await fetch(`${API_BASE}/api/submissions/instagram/batch`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-user-id': 'test-user-123',
+                            'x-user-role': 'CLIPPER'
+                        },
+                        body: JSON.stringify({ urls: urlGroups.instagram })
+                    });
+                    const data = await response.json();
+                    if (data.results) allResults.push(...data.results);
+                }
+                
+                // Calculate summary
+                const successCount = allResults.filter(r => r.success).length;
+                const failureCount = allResults.filter(r => !r.success).length;
+                
+                const data = {
+                    summary: {
+                        total: totalUrls,
+                        successful: successCount,
+                        failed: failureCount,
+                    },
+                    results: allResults
+                };
+
+                // Show summary
+                const total = data.summary?.total || totalUrls;
+
+                let resultsHtml = `
+                    <div style="margin-bottom: 15px; padding: 15px; background: white; border-radius: 8px; border: 1px solid #e5e7eb;">
+                        <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 10px;">
+                            <div style="flex: 1;">
+                                <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">Total Processed</div>
+                                <div style="font-size: 1.5em; font-weight: bold; color: #333;">${total}</div>
+                            </div>
+                            <div style="flex: 1; border-left: 1px solid #e5e7eb; padding-left: 20px;">
+                                <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">✅ Successful</div>
+                                <div style="font-size: 1.5em; font-weight: bold; color: #10b981;">${successCount}</div>
+                            </div>
+                            <div style="flex: 1; border-left: 1px solid #e5e7eb; padding-left: 20px;">
+                                <div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">❌ Failed</div>
+                                <div style="font-size: 1.5em; font-weight: bold; color: #ef4444;">${failureCount}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Show individual results
+                if (data.results && data.results.length > 0) {
+                    resultsHtml += '<div style="display: grid; gap: 10px;">';
+                    data.results.forEach((result, index) => {
+                        const isSuccess = result.success;
+                        const bgColor = isSuccess ? '#f0fdf4' : '#fef2f2';
+                        const borderColor = isSuccess ? '#10b981' : '#ef4444';
+                        const icon = isSuccess ? '✅' : '❌';
+                        
+                        resultsHtml += `
+                            <div style="padding: 12px; background: ${bgColor}; border-radius: 6px; border-left: 3px solid ${borderColor};">
+                                <div style="display: flex; align-items: start; gap: 10px;">
+                                    <span style="font-size: 1.2em;">${icon}</span>
+                                    <div style="flex: 1; min-width: 0;">
+                                        <div style="font-size: 0.85em; color: #666; margin-bottom: 4px; word-break: break-all;">${result.url}</div>
+                                        ${isSuccess ? 
+                                            `<div style="font-size: 0.9em; color: #166534; font-weight: 500;">✅ Submitted successfully</div>
+                                             <div style="font-size: 0.8em; color: #666; margin-top: 4px;">ID: ${result.submission?.id || 'N/A'}</div>` :
+                                            `<div style="font-size: 0.9em; color: #dc2626; font-weight: 500;">❌ ${result.error || 'Failed'}</div>`
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    resultsHtml += '</div>';
+                }
+
+                resultsEl.innerHTML = resultsHtml;
+
+                // Also show full JSON response in the pre element
+                responseEl.style.display = 'block';
+                responseEl.textContent = `Status: 200 OK\n\n${JSON.stringify(data, null, 2)}`;
+                responseEl.className = 'response show';
+
+            } catch (error) {
+                resultsEl.innerHTML = `
+                    <div style="padding: 15px; background: #fef2f2; border-radius: 6px; color: #dc2626; border-left: 3px solid #ef4444;">
+                        ❌ Error: ${error.message}
+                    </div>
+                `;
+                responseEl.style.display = 'block';
+                responseEl.textContent = `Error: ${error.message}`;
+                responseEl.className = 'response show error';
+            }
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+
+        window.getStatusClass = function(status) {
+            const classes = {
+                'PENDING': 'status-pending',
+                'APPROVED': 'status-approved',
+                'REJECTED': 'status-rejected',
+                'REMOVED': 'status-removed'
+            };
+            return classes[status] || 'status-pending';
+        }
+
+        window.getEmbedUrl = function(canonicalUrl, platform) {
+            if (!canonicalUrl) return null;
+            if (platform === 'YOUTUBE') {
+                // Extract video ID from YouTube URL
+                const match = canonicalUrl.match(/[?&]v=([^&]+)/);
+                if (match) {
+                    return `https://www.youtube.com/embed/${match[1]}`;
+                }
+            }
+            // TikTok and Instagram don't support iframe embeds easily
+            return null;
+        }
+
+        window.getPlatformName = function(platform) {
+            const names = {
+                'YOUTUBE': 'YouTube',
+                'TIKTOK': 'TikTok',
+                'INSTAGRAM': 'Instagram'
+            };
+            return names[platform] || platform;
+        }
+
+        window.getPlatformBadge = function(platform) {
+            const badges = {
+                'YOUTUBE': `<div class="platform-badge">
+                    <svg viewBox="0 0 24 24" fill="white">
+                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                    </svg>
+                    <span>YouTube</span>
+                </div>`,
+                'TIKTOK': `<div class="platform-badge" style="background: rgba(0,0,0,0.7);">
+                    <span style="color: white; font-weight: 600;">TikTok</span>
+                </div>`,
+                'INSTAGRAM': `<div class="platform-badge" style="background: rgba(0,0,0,0.7);">
+                    <span style="color: white; font-weight: 600;">Instagram</span>
+                </div>`
+            };
+            return badges[platform] || `<div class="platform-badge"><span>${platform}</span></div>`;
+        }
+
+        window.getTimeAgo = function(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            if (diffDays === 1) return 'Yesterday';
+            if (diffDays < 7) return `${diffDays}d ago`;
+            return date.toLocaleDateString();
+        }
+
+        window.createSubmissionCard = function(submission) {
+            const embedUrl = getEmbedUrl(submission.canonicalUrl, submission.platform);
+            const creatorInitial = (submission.creatorHandle || submission.creatorEmail || 'U').charAt(0).toUpperCase();
+            
+            return `
+                <div class="submission-card">
+                    <div class="submission-card-header">
+                        <div class="submission-creator-header">
+                            <div class="creator-avatar">${creatorInitial}</div>
+                            <div class="creator-info">
+                                <div class="creator-handle">${submission.creatorHandle ? '@' + submission.creatorHandle : submission.creatorEmail}</div>
+                                <div class="creator-name">${submission.creatorEmail.split('@')[0]}</div>
+                                <button class="view-profile-btn" onclick="event.stopPropagation(); alert('View profile: ${submission.creatorHandle || submission.creatorEmail}')">View profile</button>
+                            </div>
+                        </div>
+                        <span class="submission-status ${getStatusClass(submission.status)}">${submission.status}</span>
+                    </div>
+                    <div class="submission-video" onclick="window.open('${submission.canonicalUrl || '#'}', '_blank')">
+                        ${getPlatformBadge(submission.platform)}
+                        ${embedUrl && submission.platform === 'YOUTUBE' ? 
+                            `<iframe src="${embedUrl}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                            <div class="video-stats-overlay">
+                                <span>▶</span>
+                                <span>${formatNumber(submission.latestViews)}</span>
+                            </div>` :
+                            `<div class="submission-video-placeholder">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 3em; margin-bottom: 12px;">▶</div>
+                                    <div style="font-size: 0.9em; opacity: 0.8;">${getPlatformName(submission.platform)} Content</div>
+                                </div>
+                            </div>`
+                        }
+                    </div>
+                    <div class="submission-content">
+                        <div class="submission-metrics">
+                            <div class="metric-item">
+                                <div class="metric-value">${formatNumber(submission.latestViews)}</div>
+                                <div class="metric-label">Views</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-value">${formatNumber(submission.latestLikes)}</div>
+                                <div class="metric-label">Likes</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-value">${formatNumber(submission.latestComments)}</div>
+                                <div class="metric-label">Comments</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-value">${formatNumber(submission.latestShares)}</div>
+                                <div class="metric-label">Shares</div>
+                            </div>
+                        </div>
+                        ${submission.status === 'PENDING' ? `
+                        <div class="card-actions">
+                            <button class="action-btn approve-btn" data-submission-id="${submission.id}" onclick="event.stopPropagation(); window.approveSubmission('${submission.id}', this)">
+                                ✓ Approve
+                            </button>
+                            <button class="action-btn reject-btn" data-submission-id="${submission.id}" onclick="event.stopPropagation(); window.rejectSubmission('${submission.id}', this)">
+                                ✗ Reject
+                            </button>
+                        </div>
+                        ` : ''}
+                        <button class="details-btn" data-submission-id="${submission.id}" onclick="event.stopPropagation(); window.showSubmissionDetails('${submission.id}')">
+                            More Details
+                        </button>
+                    </div>
+                    <div class="submission-footer">
+                        <span class="engagement-badge">${submission.engagementRate.toFixed(2)}% Engagement</span>
+                        <span>${getTimeAgo(submission.createdAt)}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.approveSubmission = async function(submissionId, buttonEl) {
+            const originalText = buttonEl.innerHTML;
+            buttonEl.disabled = true;
+            buttonEl.innerHTML = 'Approving...';
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/submissions/${submissionId}/approve`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-user-id': 'admin-123',
+                        'x-user-role': 'ADMIN'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    buttonEl.innerHTML = '✓ Approved';
+                    buttonEl.style.background = '#059669';
+                    // Reload submissions after a short delay
+                    setTimeout(() => testListSubmissions(), 1000);
+                } else {
+                    alert(`Error: ${data.error || data.message || 'Failed to approve'}`);
+                    buttonEl.innerHTML = originalText;
+                    buttonEl.disabled = false;
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+                buttonEl.innerHTML = originalText;
+                buttonEl.disabled = false;
+            }
+        }
+
+        window.rejectSubmission = async function(submissionId, buttonEl) {
+            const reason = prompt('Enter rejection reason:');
+            if (!reason || reason.trim() === '') {
+                return;
+            }
+
+            const originalText = buttonEl.innerHTML;
+            buttonEl.disabled = true;
+            buttonEl.innerHTML = 'Rejecting...';
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/submissions/${submissionId}/reject`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-user-id': 'admin-123',
+                        'x-user-role': 'ADMIN'
+                    },
+                    body: JSON.stringify({ reason: reason.trim() })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    buttonEl.innerHTML = '✗ Rejected';
+                    buttonEl.style.background = '#dc2626';
+                    // Reload submissions after a short delay
+                    setTimeout(() => testListSubmissions(), 1000);
+                } else {
+                    alert(`Error: ${data.error || data.message || 'Failed to reject'}`);
+                    buttonEl.innerHTML = originalText;
+                    buttonEl.disabled = false;
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+                buttonEl.innerHTML = originalText;
+                buttonEl.disabled = false;
+            }
+        }
+
+        window.testListSubmissions = async function() {
+            const page = '1'; // Always start at page 1 when filtering
+            const pageSize = '20';
+            const status = document.getElementById('admin-status').value;
+            const platform = document.getElementById('admin-platform').value;
+            const sort = document.getElementById('admin-sort').value;
+            const search = document.getElementById('admin-search').value;
+            const gridEl = document.getElementById('submissions-grid');
+            const summaryEl = document.getElementById('summary-stats');
+            const responseEl = document.getElementById('admin-list-response');
+            
+            gridEl.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">Loading submissions...</div>';
+            summaryEl.style.display = 'none';
+
+            try {
+                let url = `${API_BASE}/admin/submissions?page=${page}&pageSize=${pageSize}`;
+                if (status) url += `&status=${status}`;
+                if (platform) url += `&platform=${platform}`;
+                if (sort) url += `&sort=${sort}`;
+                if (search) url += `&search=${encodeURIComponent(search)}`;
+
+                const response = await fetch(url, {
+                    headers: {
+                        'x-user-id': 'admin-123',
+                        'x-user-role': 'ADMIN'
+                    }
+                });
+
+                let data;
+                try {
+                    data = await response.json();
+                } catch (jsonError) {
+                    const text = await response.text();
+                    throw new Error(`Failed to parse response (${response.status}): ${text.substring(0, 200)}`);
+                }
+                
+                // Always show the raw response for debugging
+                responseEl.textContent = `Status: ${response.status} ${response.statusText}\n\n${JSON.stringify(data, null, 2)}`;
+                responseEl.className = response.ok ? 'response show' : 'response show error';
+                responseEl.style.display = 'block';
+                
+                if (response.ok && data.submissions) {
+                    // Show summary stats
+                    if (data.summary) {
+                        document.getElementById('stat-total').textContent = data.summary.totalSubmissions.toLocaleString();
+                        document.getElementById('stat-approved').textContent = data.summary.approvedCount.toLocaleString();
+                        document.getElementById('stat-views').textContent = formatNumber(data.summary.totalViews);
+                        document.getElementById('stat-engagement').textContent = data.summary.averageEngagementRate.toFixed(2) + '%';
+                        summaryEl.style.display = 'block';
+                    }
+                    
+                    // Render submission cards
+                    if (data.submissions.length > 0) {
+                        gridEl.innerHTML = data.submissions.map(createSubmissionCard).join('');
+                    } else {
+                        gridEl.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">No submissions found. Try submitting some content first!</div>';
+                    }
+                } else {
+                    // Show error with more details
+                    const errorMsg = data.error || data.message || 'Failed to load submissions';
+                    const statusMsg = response.status === 401 ? 'Unauthorized - Check admin headers' : 
+                                     response.status === 403 ? 'Forbidden - Admin access required' : 
+                                     response.status === 500 ? 'Server error - Check server logs' : 
+                                     `HTTP ${response.status}`;
+                    gridEl.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #ef4444;">
+                            <div style="font-size: 1.2em; font-weight: bold; margin-bottom: 10px;">${statusMsg}</div>
+                            <div style="color: #666; font-size: 0.9em;">${errorMsg}</div>
+                            <div style="margin-top: 15px; padding: 10px; background: #fef2f2; border-radius: 6px; font-size: 0.85em; text-align: left;">
+                                <strong>Debug Info:</strong><br>
+                                URL: ${url}<br>
+                                Status: ${response.status}<br>
+                                Response: Check the response box below
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                gridEl.innerHTML = `<div style="text-align: center; padding: 40px; color: #ef4444;">Error: ${error.message}</div>`;
+                responseEl.textContent = `Error: ${error.message}`;
+                responseEl.className = 'response show error';
+                responseEl.style.display = 'block';
+            }
+        }
+
+
+        window.showSubmissionDetails = async function(submissionId) {
+            const modal = document.getElementById('details-modal');
+            const modalBody = document.getElementById('modal-body');
+            
+            modal.classList.add('show');
+            modalBody.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">Loading details...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/submissions/${submissionId}/details`, {
+                    headers: {
+                        'x-user-id': 'admin-123',
+                        'x-user-role': 'ADMIN'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const submission = data.submission;
+                    const snapshots = data.snapshots || [];
+                    const deltas = data.deltas || {};
+                    
+                    let html = `
+                        <div class="detail-section">
+                            <h4>Submission Information</h4>
+                            <div class="detail-row">
+                                <div class="detail-label">ID</div>
+                                <div class="detail-value" style="font-family: monospace; font-size: 0.85em;">${submission.id}</div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Status</div>
+                                <div class="detail-value"><span class="submission-status ${getStatusClass(submission.status)}">${submission.status}</span></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Platform</div>
+                                <div class="detail-value">${submission.platform}</div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Video URL</div>
+                                <div class="detail-value"><a href="${submission.canonicalUrl}" target="_blank" style="color: #667eea;">${submission.canonicalUrl || 'N/A'}</a></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Content ID</div>
+                                <div class="detail-value" style="font-family: monospace;">${submission.contentId}</div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Created</div>
+                                <div class="detail-value">${new Date(submission.createdAt).toLocaleString()}</div>
+                            </div>
+                            ${submission.approvedAt ? `
+                            <div class="detail-row">
+                                <div class="detail-label">Approved At</div>
+                                <div class="detail-value">${new Date(submission.approvedAt).toLocaleString()}</div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Approved By</div>
+                                <div class="detail-value">${submission.approvedBy || 'N/A'}</div>
+                            </div>
+                            ` : ''}
+                            ${submission.rejectionReason ? `
+                            <div class="detail-row">
+                                <div class="detail-label">Rejection Reason</div>
+                                <div class="detail-value">
+                                    <div class="rejection-reason">${submission.rejectionReason}</div>
+                                </div>
+                            </div>
+                            ` : ''}
+                        </div>
+
+                        <div class="detail-section">
+                            <h4>Creator Information</h4>
+                            <div class="detail-row">
+                                <div class="detail-label">Creator ID</div>
+                                <div class="detail-value" style="font-family: monospace; font-size: 0.85em;">${submission.creatorId}</div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Email</div>
+                                <div class="detail-value">${submission.creatorEmail}</div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Handle</div>
+                                <div class="detail-value">${submission.creatorHandle || 'N/A'}</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-section">
+                            <h4>Current Metrics</h4>
+                            <div class="detail-row">
+                                <div class="detail-label">Views</div>
+                                <div class="detail-value">${formatNumber(submission.latestViews)}</div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Likes</div>
+                                <div class="detail-value">${formatNumber(submission.latestLikes)}</div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Comments</div>
+                                <div class="detail-value">${formatNumber(submission.latestComments)}</div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Shares</div>
+                                <div class="detail-value">${formatNumber(submission.latestShares)}</div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Last Updated</div>
+                                <div class="detail-value">${submission.lastMetricsAt ? new Date(submission.lastMetricsAt).toLocaleString() : 'Never'}</div>
+                            </div>
+                        </div>
+
+                        ${Object.keys(deltas).length > 0 ? `
+                        <div class="detail-section">
+                            <h4>Growth Deltas</h4>
+                            <div class="detail-row">
+                                <div class="detail-label">Views (24h)</div>
+                                <div class="detail-value">${deltas.views24h > 0 ? '+' : ''}${formatNumber(deltas.views24h)}</div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Views (7d)</div>
+                                <div class="detail-value">${deltas.views7d > 0 ? '+' : ''}${formatNumber(deltas.views7d)}</div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Likes (24h)</div>
+                                <div class="detail-value">${deltas.likes24h > 0 ? '+' : ''}${formatNumber(deltas.likes24h)}</div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Comments (24h)</div>
+                                <div class="detail-value">${deltas.comments24h > 0 ? '+' : ''}${formatNumber(deltas.comments24h)}</div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Shares (24h)</div>
+                                <div class="detail-value">${deltas.shares24h > 0 ? '+' : ''}${formatNumber(deltas.shares24h)}</div>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        ${snapshots.length > 0 ? `
+                        <div class="detail-section">
+                            <h4>Metric History (${snapshots.length} snapshots)</h4>
+                            <div class="snapshots-list">
+                                <div class="snapshot-item snapshot-header">
+                                    <div>Date</div>
+                                    <div>Views</div>
+                                    <div>Likes</div>
+                                    <div>Comments</div>
+                                    <div>Shares</div>
+                                </div>
+                                ${snapshots.map(s => `
+                                    <div class="snapshot-item">
+                                        <div>${new Date(s.capturedAt).toLocaleString()}</div>
+                                        <div>${formatNumber(s.views)}</div>
+                                        <div>${formatNumber(s.likes)}</div>
+                                        <div>${formatNumber(s.comments)}</div>
+                                        <div>${formatNumber(s.shares)}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        ` : '<div class="detail-section"><h4>Metric History</h4><p style="color: #666;">No snapshots yet. Metrics will be tracked automatically.</p></div>'}
+                    `;
+                    
+                    modalBody.innerHTML = html;
+                } else {
+                    modalBody.innerHTML = `<div style="text-align: center; padding: 40px; color: #ef4444;">Error: ${data.error || 'Failed to load details'}</div>`;
+                }
+            } catch (error) {
+                modalBody.innerHTML = `<div style="text-align: center; padding: 40px; color: #ef4444;">Error: ${error.message}</div>`;
+            }
+        }
+
+        window.closeDetailsModal = function() {
+            document.getElementById('details-modal').classList.remove('show');
+        }
+
+        window.resetFilters = function() {
+            document.getElementById('admin-status').value = '';
+            document.getElementById('admin-platform').value = '';
+            document.getElementById('admin-sort').value = 'newest';
+            document.getElementById('admin-search').value = '';
+            testListSubmissions();
+        }
+
+        // Set up filter event listeners and auto-load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-load submissions on page load
+            testListSubmissions();
+            
+            // Add event listeners to filters
+            const statusEl = document.getElementById('admin-status');
+            const platformEl = document.getElementById('admin-platform');
+            const sortEl = document.getElementById('admin-sort');
+            const searchEl = document.getElementById('admin-search');
+            
+            if (statusEl) statusEl.addEventListener('change', testListSubmissions);
+            if (platformEl) platformEl.addEventListener('change', testListSubmissions);
+            if (sortEl) sortEl.addEventListener('change', testListSubmissions);
+            
+            // Debounced search
+            if (searchEl) {
+                searchEl.addEventListener('input', function() {
+                    clearTimeout(window.searchTimeout);
+                    window.searchTimeout = setTimeout(testListSubmissions, 500);
+                });
+            }
+        });
+
+        // Check status on load and every 5 seconds
+        checkStatus();
+        setInterval(checkStatus, 5000);
+    </script>
+</body>
+</html>
+

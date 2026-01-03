@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: clipping-tracking-api
+    env: node
+    buildCommand: npm install && npm run build && npx prisma generate && npx prisma migrate deploy
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: APIFY_API_KEY
+        sync: false
+      - key: SOCIAVAULT_API_KEY
+        sync: false
+      - key: BASE_URL
+        sync: false
+
