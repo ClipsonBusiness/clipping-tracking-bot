@@ -204,13 +204,15 @@ export class InstagramCollector {
         let actorInputSchema: any = null;
         try {
           const actorInfo = await this.apifyClient.actor('apify/instagram-reel-scraper').get();
-          actorDefaultInput = (actorInfo as any).defaultRunInput || null;
-          actorInputSchema = (actorInfo as any).inputSchema || null;
-          
-          console.log(`[Instagram Collector] Actor name: ${(actorInfo as any).name || 'unknown'}`);
-          console.log(`[Instagram Collector] Actor default input:`, JSON.stringify(actorDefaultInput, null, 2));
-          if (actorInputSchema) {
-            console.log(`[Instagram Collector] Actor input schema (first 3000 chars):`, JSON.stringify(actorInputSchema, null, 2).substring(0, 3000));
+          if (actorInfo) {
+            actorDefaultInput = (actorInfo as any).defaultRunInput || null;
+            actorInputSchema = (actorInfo as any).inputSchema || null;
+            
+            console.log(`[Instagram Collector] Actor name: ${(actorInfo as any).name || 'unknown'}`);
+            console.log(`[Instagram Collector] Actor default input:`, JSON.stringify(actorDefaultInput, null, 2));
+            if (actorInputSchema) {
+              console.log(`[Instagram Collector] Actor input schema (first 3000 chars):`, JSON.stringify(actorInputSchema, null, 2).substring(0, 3000));
+            }
           }
         } catch (actorInfoError) {
           console.log(`[Instagram Collector] Could not get actor info: ${actorInfoError instanceof Error ? actorInfoError.message : 'Unknown'}`);

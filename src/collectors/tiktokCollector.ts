@@ -250,7 +250,9 @@ export class TikTokCollector {
         // Get actor info to verify it exists
         try {
           const actorInfo = await actor.get();
-          console.log(`[TikTok Collector] Actor found: ${(actorInfo as any).name || 'unknown'}, version: ${(actorInfo as any).defaultRunInput?.version || 'latest'}`);
+          if (actorInfo) {
+            console.log(`[TikTok Collector] Actor found: ${(actorInfo as any).name || 'unknown'}, version: ${(actorInfo as any).defaultRunInput?.version || 'latest'}`);
+          }
         } catch (infoError) {
           console.warn(`[TikTok Collector] Could not get actor info:`, infoError);
         }
