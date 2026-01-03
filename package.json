@@ -15,7 +15,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:generate": "prisma generate",
-    "vercel-build": "prisma generate && prisma migrate deploy && tsc",
+    "vercel-build": "prisma generate && tsc",
     "deploy": "./deploy.sh",
     "postinstall": "prisma generate"
   },

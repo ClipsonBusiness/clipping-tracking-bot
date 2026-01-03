@@ -1,7 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import express from 'express';
 import cors from 'cors';
-import { PrismaClient } from '@prisma/client';
 import apiRoutes from '../src/routes';
 import adminRoutes from '../src/routes/admin';
 import { adminMiddleware } from '../src/middleware/admin';
