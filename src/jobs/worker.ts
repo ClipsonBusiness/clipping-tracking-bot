@@ -15,15 +15,15 @@ try {
   });
 
   // Worker event handlers
-  exampleWorker.on('completed', (job) => {
+  exampleWorker.on('completed', (job: any) => {
     console.log(`Job ${job?.id} has been completed`);
   });
 
-  exampleWorker.on('failed', (job, err) => {
+  exampleWorker.on('failed', (job: any, err: any) => {
     console.error(`Job ${job?.id} has failed with error:`, err);
   });
 
-  exampleWorker.on('error', (err) => {
+  exampleWorker.on('error', (err: any) => {
     console.error('Worker error:', err);
   });
 
