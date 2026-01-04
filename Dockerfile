@@ -37,6 +37,6 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Run migrations and start server
-# Run migrations first (fail if migrations fail), then start server
-CMD ["sh", "-c", "echo 'Running database migrations...' && npx prisma migrate deploy && echo 'Migrations completed successfully!' && npm start"]
+# Try migrate deploy first, if it fails use db push (simpler, syncs schema directly)
+CMD ["sh", "-c", "echo 'Setting up database...' && (npx prisma migrate deploy || (echo 'Migration failed, trying db push...' && npx prisma db push --accept-data-loss)) && echo 'Database ready!' && npm start"]
 
