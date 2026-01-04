@@ -41,5 +41,22 @@ app.get('/', (req, res) => {
 
 // Export as Vercel serverless function
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  return app(req, res);
+  try {
+    // Ensure DATABASE_URL is available (Vercel should provide it)
+    if (!process.env.DATABASE_URL) {
+      console.error('DATABASE_URL is not set in environment variables');
+      return res.status(500).json({ 
+        error: 'Server configuration error',
+        message: 'DATABASE_URL environment variable is not configured'
+      });
+    }
+    
+    return app(req, res);
+  } catch (error: any) {
+    console.error('Handler error:', error);
+    return res.status(500).json({ 
+      error: 'Internal server error',
+      message: error?.message || 'Unknown error occurred'
+    });
+  }
 }

@@ -8,12 +8,19 @@ export function getPrismaClient(): PrismaClient {
   if (!prisma) {
     // Check if DATABASE_URL is available
     if (!process.env.DATABASE_URL) {
-      throw new Error('DATABASE_URL environment variable is not set. Please configure your database connection.');
+      const error = new Error('DATABASE_URL environment variable is not set. Please configure your database connection.');
+      console.error('PrismaClient initialization failed:', error.message);
+      throw error;
     }
     
-    prisma = new PrismaClient({
-      log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-    });
+    try {
+      prisma = new PrismaClient({
+        log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+      });
+    } catch (error: any) {
+      console.error('Failed to create PrismaClient:', error);
+      throw error;
+    }
   }
   
   return prisma;

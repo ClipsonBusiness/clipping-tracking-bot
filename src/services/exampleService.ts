@@ -1,10 +1,9 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { getPrismaClient } from '../utils/prisma';
 
 export const exampleService = {
   async getExampleData() {
     // Example service method
+    // Note: Not using PrismaClient here, but if needed, use getPrismaClient()
     return {
       message: 'This is example data from the service layer',
       timestamp: new Date().toISOString(),
