@@ -19,6 +19,6 @@ export function getPrismaClient(): PrismaClient {
   return prisma;
 }
 
-// Export default instance for convenience
-export default getPrismaClient();
+// Export the function, not the instance (lazy loading)
+export default getPrismaClient;
 
