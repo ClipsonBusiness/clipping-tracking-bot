@@ -3,7 +3,7 @@ CREATE TABLE "User" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "email" TEXT NOT NULL,
     "role" TEXT NOT NULL DEFAULT 'CLIPPER',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- CreateTable
@@ -15,11 +15,11 @@ CREATE TABLE "SocialAccount" (
     "platformUserId" TEXT NOT NULL,
     "profileUrl" TEXT,
     "verificationCode" TEXT,
-    "verificationExpiresAt" DATETIME,
-    "verifiedAt" DATETIME,
+    "verificationExpiresAt" TIMESTAMP(3),
+    "verifiedAt" TIMESTAMP(3),
     "status" TEXT NOT NULL DEFAULT 'PENDING',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "SocialAccount_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -37,12 +37,12 @@ CREATE TABLE "Submission" (
     "latestLikes" INTEGER NOT NULL DEFAULT 0,
     "latestComments" INTEGER NOT NULL DEFAULT 0,
     "latestShares" INTEGER NOT NULL DEFAULT 0,
-    "lastMetricsAt" DATETIME,
+    "lastMetricsAt" TIMESTAMP(3),
     "viewsAtApproval" INTEGER,
-    "approvedAt" DATETIME,
+    "approvedAt" TIMESTAMP(3),
     "approvedBy" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "Submission_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -50,7 +50,7 @@ CREATE TABLE "Submission" (
 CREATE TABLE "MetricSnapshot" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "submissionId" TEXT NOT NULL,
-    "capturedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "capturedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "views" INTEGER NOT NULL DEFAULT 0,
     "likes" INTEGER NOT NULL DEFAULT 0,
     "comments" INTEGER NOT NULL DEFAULT 0,
