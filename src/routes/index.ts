@@ -41,5 +41,9 @@ router.use('/submissions', submissionsRoutes);
 import statsRoutes from './stats';
 router.use('/stats', statsRoutes);
 
+// Campaign routes
+import campaignsRoutes from './campaigns';
+router.use('/campaigns', campaignsRoutes);
+
 export default router;
 

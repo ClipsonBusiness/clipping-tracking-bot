@@ -18,6 +18,33 @@ model User {
   createdAt     DateTime        @default(now())
   socialAccounts SocialAccount[]
   submissions   Submission[]
+  campaignMemberships CampaignMember[]
+}
+
+model Campaign {
+  id            String          @id @default(cuid())
+  name          String
+  description   String?
+  status        String          @default("ACTIVE") // ACTIVE | INACTIVE | COMPLETED
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  members       CampaignMember[]
+  submissions   Submission[]
+  
+  @@index([status])
+}
+
+model CampaignMember {
+  id          String    @id @default(cuid())
+  userId      String
+  campaignId  String
+  joinedAt    DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaign    Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, campaignId])
+  @@index([campaignId])
+  @@index([userId])
 }
 
 model SocialAccount {
@@ -43,6 +70,7 @@ model SocialAccount {
 model Submission {
   id                  String           @id @default(cuid())
   userId              String
+  campaignId          String?          // Link to campaign (optional for backwards compatibility)
   platform            String           // YOUTUBE
   contentId           String
   canonicalUrl        String?
@@ -60,12 +88,14 @@ model Submission {
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
   user                User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaign            Campaign?        @relation(fields: [campaignId], references: [id], onDelete: SetNull)
   metricSnapshots     MetricSnapshot[]
 
   @@unique([platform, contentId])
   @@index([userId])
   @@index([status])
   @@index([platform, status])
+  @@index([campaignId])
 }
 
 model MetricSnapshot {

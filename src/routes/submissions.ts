@@ -861,7 +861,7 @@ router.post('/:platform/batch', async (req: Request, res: Response) => {
  */
 router.post('/auto', async (req: Request, res: Response) => {
   try {
-    const { url } = req.body;
+    const { url, campaignId } = req.body;
     const userId = req.user?.id;
 
     if (!userId) {

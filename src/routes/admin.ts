@@ -15,9 +15,14 @@ router.get('/submissions', async (req: Request, res: Response) => {
     const status = req.query.status as string | undefined;
     const platform = req.query.platform as string | undefined;
     const search = req.query.search as string | undefined;
+    const campaignId = req.query.campaignId as string | undefined;
 
     // Build where clause for filtering
     const whereConditions: any[] = [];
+    
+    if (campaignId) {
+      whereConditions.push({ campaignId });
+    }
 
     if (status) {
       whereConditions.push({ status });
@@ -162,6 +167,10 @@ router.get('/submissions', async (req: Request, res: Response) => {
         creatorId: submission.userId,
         creatorEmail: submission.user.email,
         creatorHandle,
+        campaign: submission.campaign ? {
+          id: submission.campaign.id,
+          name: submission.campaign.name,
+        } : null,
         canonicalUrl: submission.canonicalUrl || '',
         thumbnailUrl: null, // Not in schema, return null
         latestViews: submission.latestViews,

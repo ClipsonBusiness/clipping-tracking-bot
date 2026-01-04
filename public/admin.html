@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Campaigns & Submissions</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.2s;
+        }
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .campaign-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .campaign-card {
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .campaign-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .campaign-stats {
+            display: flex;
+            gap: 15px;
+            margin: 15px 0;
+            font-size: 0.85em;
+            color: #666;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .filter-input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9em;
+        }
+        .submissions-grid {
+            display: grid;
+            gap: 15px;
+        }
+        .submission-card {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 15px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 15px;
+        }
+        .submission-info {
+            flex: 1;
+        }
+        .submission-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .submission-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .submission-url {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+        .submission-actions {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .status-approved {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .status-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .create-campaign-form {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+        .form-group textarea {
+            min-height: 80px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚙️ Admin Dashboard</h1>
+        <p class="subtitle">Manage campaigns and review submissions</p>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('campaigns')">Campaigns</button>
+            <button class="tab" onclick="switchTab('submissions')">Submissions</button>
+        </div>
+
+        <!-- Campaigns Tab -->
+        <div id="campaigns-tab" class="tab-content active">
+            <h2 style="margin-bottom: 20px;">Create New Campaign</h2>
+            <div class="create-campaign-form">
+                <div class="form-group">
+                    <label>Campaign Name</label>
+                    <input type="text" id="campaign-name" placeholder="e.g., Summer 2024 Campaign">
+                </div>
+                <div class="form-group">
+                    <label>Description (optional)</label>
+                    <textarea id="campaign-description" placeholder="Describe what this campaign is about..."></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="createCampaign()">Create Campaign</button>
+            </div>
+
+            <h2 style="margin-bottom: 20px;">Active Campaigns</h2>
+            <div id="campaigns-container">
+                <div style="text-align: center; padding: 40px; color: #666;">
+                    Loading campaigns...
+                </div>
+            </div>
+        </div>
+
+        <!-- Submissions Tab -->
+        <div id="submissions-tab" class="tab-content">
+            <div class="filters">
+                <select id="filter-campaign" class="filter-input" onchange="loadSubmissions()">
+                    <option value="">All Campaigns</option>
+                </select>
+                <select id="filter-status" class="filter-input" onchange="loadSubmissions()">
+                    <option value="">All Status</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="APPROVED">Approved</option>
+                    <option value="REJECTED">Rejected</option>
+                </select>
+                <select id="filter-platform" class="filter-input" onchange="loadSubmissions()">
+                    <option value="">All Platforms</option>
+                    <option value="YOUTUBE">YouTube</option>
+                    <option value="TIKTOK">TikTok</option>
+                    <option value="INSTAGRAM">Instagram</option>
+                </select>
+            </div>
+
+            <div id="submissions-container">
+                <div style="text-align: center; padding: 40px; color: #666;">
+                    Loading submissions...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`${tab}-tab`).classList.add('active');
+            
+            if (tab === 'submissions') {
+                loadSubmissions();
+            } else if (tab === 'campaigns') {
+                loadCampaigns();
+            }
+        }
+
+        async function loadCampaigns() {
+            try {
+                const response = await fetch(`${API_BASE}/api/campaigns`, {
+                    headers: {
+                        'x-user-id': 'admin-123',
+                        'x-user-role': 'ADMIN'
+                    }
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    renderCampaigns(data.campaigns || []);
+                } else {
+                    document.getElementById('campaigns-container').innerHTML = 
+                        `<div style="color: #ef4444;">Error: ${data.error || 'Unknown error'}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('campaigns-container').innerHTML = 
+                    `<div style="color: #ef4444;">Error: ${error.message}</div>`;
+            }
+        }
+
+        function renderCampaigns(campaigns) {
+            const container = document.getElementById('campaigns-container');
+            
+            if (campaigns.length === 0) {
+                container.innerHTML = '<div style="color: #666;">No campaigns yet. Create one above!</div>';
+                return;
+            }
+
+            container.innerHTML = '<div class="campaign-grid">' +
+                campaigns.map(campaign => `
+                    <div class="campaign-card">
+                        <div class="campaign-name">${campaign.name}</div>
+                        <div style="color: #666; font-size: 0.9em; margin-bottom: 15px;">${campaign.description || 'No description'}</div>
+                        <div class="campaign-stats">
+                            <span>👥 ${campaign.memberCount} members</span>
+                            <span>📹 ${campaign.submissionCount} submissions</span>
+                        </div>
+                        <div style="font-size: 0.85em; color: #666;">
+                            Created: ${new Date(campaign.createdAt).toLocaleDateString()}
+                        </div>
+                    </div>
+                `).join('') + '</div>';
+        }
+
+        async function createCampaign() {
+            const name = document.getElementById('campaign-name').value.trim();
+            const description = document.getElementById('campaign-description').value.trim();
+            
+            if (!name) {
+                alert('Please enter a campaign name');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/campaigns`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-user-id': 'admin-123',
+                        'x-user-role': 'ADMIN'
+                    },
+                    body: JSON.stringify({ name, description: description || null })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('campaign-name').value = '';
+                    document.getElementById('campaign-description').value = '';
+                    await loadCampaigns();
+                    alert('Campaign created successfully!');
+                } else {
+                    alert(`Error: ${data.error || 'Failed to create campaign'}`);
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        async function loadSubmissions() {
+            const campaignId = document.getElementById('filter-campaign').value;
+            const status = document.getElementById('filter-status').value;
+            const platform = document.getElementById('filter-platform').value;
+            
+            let url = `${API_BASE}/admin/submissions?page=1&pageSize=50`;
+            if (campaignId) url += `&campaignId=${campaignId}`;
+            if (status) url += `&status=${status}`;
+            if (platform) url += `&platform=${platform}`;
+
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'x-user-id': 'admin-123',
+                        'x-user-role': 'ADMIN'
+                    }
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    renderSubmissions(data.submissions || []);
+                    updateCampaignFilter(data.submissions || []);
+                } else {
+                    document.getElementById('submissions-container').innerHTML = 
+                        `<div style="color: #ef4444;">Error: ${data.error || 'Unknown error'}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('submissions-container').innerHTML = 
+                    `<div style="color: #ef4444;">Error: ${error.message}</div>`;
+            }
+        }
+
+        function updateCampaignFilter(submissions) {
+            const select = document.getElementById('filter-campaign');
+            const campaigns = [...new Set(submissions.map(s => s.campaign).filter(Boolean).map(c => c.id))];
+            
+            // Keep existing options, just ensure campaigns are there
+            const existing = Array.from(select.options).map(o => o.value);
+            campaigns.forEach(campaignId => {
+                if (!existing.includes(campaignId)) {
+                    const campaign = submissions.find(s => s.campaign?.id === campaignId)?.campaign;
+                    if (campaign) {
+                        const option = document.createElement('option');
+                        option.value = campaignId;
+                        option.textContent = campaign.name;
+                        select.appendChild(option);
+                    }
+                }
+            });
+        }
+
+        function renderSubmissions(submissions) {
+            const container = document.getElementById('submissions-container');
+            
+            if (submissions.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">No submissions found.</div>';
+                return;
+            }
+
+            container.innerHTML = '<div class="submissions-grid">' +
+                submissions.map(submission => {
+                    const statusClass = `status-${submission.status.toLowerCase()}`;
+                    const creatorHandle = submission.user?.socialAccounts?.find(a => a.platform === submission.platform)?.handle || 'N/A';
+                    
+                    return `
+                        <div class="submission-card">
+                            <div class="submission-info">
+                                <div class="submission-title">${submission.platform} Submission</div>
+                                <div class="submission-meta">
+                                    <span>👤 ${creatorHandle}</span>
+                                    <span>📅 ${new Date(submission.createdAt).toLocaleDateString()}</span>
+                                    ${submission.campaign ? `<span>🎯 ${submission.campaign.name}</span>` : ''}
+                                    <span>👁️ ${submission.latestViews.toLocaleString()} views</span>
+                                    <span>❤️ ${submission.latestLikes.toLocaleString()} likes</span>
+                                </div>
+                                ${submission.canonicalUrl ? 
+                                    `<a href="${submission.canonicalUrl}" target="_blank" class="submission-url">${submission.canonicalUrl}</a>` : 
+                                    ''
+                                }
+                            </div>
+                            <div class="submission-actions">
+                                <span class="status-badge ${statusClass}">${submission.status}</span>
+                                ${submission.status === 'PENDING' ? `
+                                    <button class="btn btn-primary" onclick="approveSubmission('${submission.id}')" style="font-size: 0.8em; padding: 6px 12px;">✓ Approve</button>
+                                    <button class="btn" onclick="rejectSubmission('${submission.id}')" style="font-size: 0.8em; padding: 6px 12px; background: #fee2e2; color: #991b1b;">✗ Reject</button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('') + '</div>';
+        }
+
+        async function approveSubmission(submissionId) {
+            try {
+                const response = await fetch(`${API_BASE}/admin/submissions/${submissionId}/approve`, {
+                    method: 'POST',
+                    headers: {
+                        'x-user-id': 'admin-123',
+                        'x-user-role': 'ADMIN'
+                    }
+                });
+                
+                if (response.ok) {
+                    await loadSubmissions();
+                } else {
+                    const data = await response.json();
+                    alert(`Error: ${data.error || 'Failed to approve'}`);
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        async function rejectSubmission(submissionId) {
+            const reason = prompt('Rejection reason (optional):');
+            try {
+                const response = await fetch(`${API_BASE}/admin/submissions/${submissionId}/reject`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-user-id': 'admin-123',
+                        'x-user-role': 'ADMIN'
+                    },
+                    body: JSON.stringify({ reason: reason || null })
+                });
+                
+                if (response.ok) {
+                    await loadSubmissions();
+                } else {
+                    const data = await response.json();
+                    alert(`Error: ${data.error || 'Failed to reject'}`);
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        // Load campaigns on page load
+        loadCampaigns();
+    </script>
+</body>
+</html>
+
