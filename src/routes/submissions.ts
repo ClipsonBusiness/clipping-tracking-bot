@@ -669,7 +669,7 @@ router.post('/:platform/batch', async (req: Request, res: Response) => {
                 latestViews: videoMetrics.views,
                 latestLikes: videoMetrics.likes,
                 latestComments: videoMetrics.comments,
-                latestShares: videoMetrics.shares || 0,
+                latestShares: (videoMetrics as any).shares || 0,
                 lastMetricsAt: now,
                 metricSnapshots: {
                   create: {
@@ -677,7 +677,7 @@ router.post('/:platform/batch', async (req: Request, res: Response) => {
                     views: videoMetrics.views,
                     likes: videoMetrics.likes,
                     comments: videoMetrics.comments,
-                    shares: videoMetrics.shares || 0,
+                    shares: (videoMetrics as any).shares || 0,
                   },
                 },
               },
@@ -732,7 +732,7 @@ router.post('/:platform/batch', async (req: Request, res: Response) => {
                 latestViews: videoMetrics.views,
                 latestLikes: videoMetrics.likes,
                 latestComments: videoMetrics.comments,
-                latestShares: videoMetrics.shares || 0,
+                latestShares: (videoMetrics as any).shares || 0,
                 lastMetricsAt: now,
                 metricSnapshots: {
                   create: {
@@ -740,7 +740,7 @@ router.post('/:platform/batch', async (req: Request, res: Response) => {
                     views: videoMetrics.views,
                     likes: videoMetrics.likes,
                     comments: videoMetrics.comments,
-                    shares: videoMetrics.shares || 0,
+                    shares: (videoMetrics as any).shares || 0,
                   },
                 },
               },

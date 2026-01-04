@@ -249,9 +249,9 @@ export class TikTokCollector {
         
         // Get actor info to verify it exists
         try {
-          const actorInfo = await actor.get();
+          const actorInfo: any = await actor.get();
           if (actorInfo) {
-            console.log(`[TikTok Collector] Actor found: ${(actorInfo as any).name || 'unknown'}, version: ${(actorInfo as any).defaultRunInput?.version || 'latest'}`);
+            console.log(`[TikTok Collector] Actor found: ${actorInfo.name || 'unknown'}, version: ${actorInfo.defaultRunInput?.version || 'latest'}`);
           }
         } catch (infoError) {
           console.warn(`[TikTok Collector] Could not get actor info:`, infoError);
@@ -294,7 +294,7 @@ export class TikTokCollector {
           errorDetails = ` Status: ${finishedRun.status}. Last 1000 chars of log: ${logSnippet}`;
           
           // Also try to get run execution details
-          const runDetails = await this.apifyClient.run(run.id).get();
+          const runDetails: any = await this.apifyClient.run(run.id).get();
           if (runDetails?.statusMessage) {
             errorDetails += ` Status message: ${runDetails.statusMessage}`;
           }

@@ -92,7 +92,7 @@ const processMetricsJob = async (job: Job<MetricsJobData>) => {
         views: metrics.views,
         likes: metrics.likes,
         comments: metrics.comments,
-        shares: metrics.shares || 0,
+        shares: (metrics as any).shares || 0,
       },
     });
 
