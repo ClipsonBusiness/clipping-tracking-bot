@@ -58,6 +58,15 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Serve frontend pages at clean URLs
+app.get('/admin', (req, res) => {
+  res.sendFile('admin.html', { root: 'public' });
+});
+
+app.get('/clipper', (req, res) => {
+  res.sendFile('clipper.html', { root: 'public' });
+});
+
 // Import routes
 import apiRoutes from './routes';
 import adminRoutes from './routes/admin';
@@ -66,7 +75,7 @@ import { adminMiddleware } from './middleware/admin';
 // Use routes
 app.use('/api', apiRoutes);
 
-// Admin routes (protected by admin middleware)
+// Admin API routes (protected by admin middleware)
 app.use('/admin', adminMiddleware, adminRoutes);
 
 // Error handling middleware

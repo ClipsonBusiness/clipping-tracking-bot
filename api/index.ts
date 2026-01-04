@@ -17,6 +17,18 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from public directory
+app.use(express.static('public'));
+
+// Serve frontend pages at clean URLs
+app.get('/admin', (req, res) => {
+  res.sendFile('admin.html', { root: 'public' });
+});
+
+app.get('/clipper', (req, res) => {
+  res.sendFile('clipper.html', { root: 'public' });
+});
+
 // Routes - Vercel rewrites handle the /api prefix, so routes should be relative
 app.use('/api', apiRoutes);
 app.use('/admin', adminMiddleware, adminRoutes);
