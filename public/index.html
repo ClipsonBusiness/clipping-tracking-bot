@@ -1412,6 +1412,26 @@
             return num.toString();
         }
 
+        // Copy verification code to clipboard
+        function copyVerificationCode(code) {
+            navigator.clipboard.writeText(code).then(() => {
+                // Show feedback
+                const codeEl = document.getElementById('verification-code');
+                if (codeEl) {
+                    const originalText = codeEl.textContent.trim();
+                    codeEl.textContent = '✓ Copied!';
+                    codeEl.style.color = '#10b981';
+                    setTimeout(() => {
+                        codeEl.textContent = originalText;
+                        codeEl.style.color = '#fff';
+                    }, 2000);
+                }
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy. Code: ' + code);
+            });
+        }
+
         window.loadStats = async function() {
             const container = document.getElementById('stats-container');
             const responseEl = document.getElementById('stats-response');
