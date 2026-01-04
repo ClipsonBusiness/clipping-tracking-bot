@@ -1,11 +1,10 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { getPrismaClient } from '../utils/prisma';
 import { YouTubeCollector } from '../collectors/youtubeCollector';
 import { TikTokCollector } from '../collectors/tiktokCollector';
 import { InstagramCollector } from '../collectors/instagramCollector';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Lazy initialization to avoid errors if API key is not set
 // Always create a new instance to ensure fresh API key from env
@@ -74,13 +73,13 @@ router.post('/youtube', async (req: Request, res: Response) => {
     // Ensure user exists (create if doesn't exist)
     let user;
     try {
-      user = await prisma.user.findUnique({
+      user = await getPrismaClient().user.findUnique({
         where: { id: userId },
       });
       
       if (!user) {
         // Create user if doesn't exist
-        user = await prisma.user.create({
+        user = await getPrismaClient().user.create({
           data: {
             id: userId,
             email: `${userId}@example.com`, // Placeholder email
@@ -102,7 +101,7 @@ router.post('/youtube', async (req: Request, res: Response) => {
     // Check if social account already exists
     let existing;
     try {
-      existing = await prisma.socialAccount.findUnique({
+      existing = await getPrismaClient().socialAccount.findUnique({
         where: {
           userId_platform_handle: {
             userId,
@@ -135,7 +134,7 @@ router.post('/youtube', async (req: Request, res: Response) => {
         const verificationExpiresAt = new Date(Date.now() + 60 * 60 * 1000); // 60 minutes from now
         
         // Update the account with new code
-        await prisma.socialAccount.update({
+        await getPrismaClient().socialAccount.update({
           where: { id: existing.id },
           data: {
             verificationCode: code,
@@ -158,7 +157,7 @@ router.post('/youtube', async (req: Request, res: Response) => {
     // Create social account
     let socialAccount;
     try {
-      socialAccount = await prisma.socialAccount.create({
+      socialAccount = await getPrismaClient().socialAccount.create({
         data: {
           userId,
           platform: 'YOUTUBE',
@@ -242,12 +241,12 @@ router.post('/tiktok', async (req: Request, res: Response) => {
     // Ensure user exists
     let user;
     try {
-      user = await prisma.user.findUnique({
+      user = await getPrismaClient().user.findUnique({
         where: { id: userId },
       });
       
       if (!user) {
-        user = await prisma.user.create({
+        user = await getPrismaClient().user.create({
           data: {
             id: userId,
             email: `${userId}@example.com`,
@@ -267,7 +266,7 @@ router.post('/tiktok', async (req: Request, res: Response) => {
     }
 
     // Check if social account already exists
-    const existing = await prisma.socialAccount.findUnique({
+    const existing = await getPrismaClient().socialAccount.findUnique({
       where: {
         userId_platform_handle: {
           userId,
@@ -288,7 +287,7 @@ router.post('/tiktok', async (req: Request, res: Response) => {
         const verificationExpiresAt = new Date(Date.now() + 60 * 60 * 1000); // 60 minutes from now
         
         // Update the account with new code
-        await prisma.socialAccount.update({
+        await getPrismaClient().socialAccount.update({
           where: { id: existing.id },
           data: {
             verificationCode: code,
@@ -310,7 +309,7 @@ router.post('/tiktok', async (req: Request, res: Response) => {
     verificationExpiresAt.setMinutes(verificationExpiresAt.getMinutes() + 60); // 60 minutes from now
 
     // Create social account
-    const socialAccount = await prisma.socialAccount.create({
+    const socialAccount = await getPrismaClient().socialAccount.create({
       data: {
         userId,
         platform: 'TIKTOK',
@@ -358,12 +357,12 @@ router.post('/instagram', async (req: Request, res: Response) => {
     // Ensure user exists
     let user;
     try {
-      user = await prisma.user.findUnique({
+      user = await getPrismaClient().user.findUnique({
         where: { id: userId },
       });
       
       if (!user) {
-        user = await prisma.user.create({
+        user = await getPrismaClient().user.create({
           data: {
             id: userId,
             email: `${userId}@example.com`,
@@ -383,7 +382,7 @@ router.post('/instagram', async (req: Request, res: Response) => {
     }
 
     // Check if social account already exists
-    const existing = await prisma.socialAccount.findUnique({
+    const existing = await getPrismaClient().socialAccount.findUnique({
       where: {
         userId_platform_handle: {
           userId,
@@ -404,7 +403,7 @@ router.post('/instagram', async (req: Request, res: Response) => {
         const verificationExpiresAt = new Date(Date.now() + 60 * 60 * 1000); // 60 minutes from now
         
         // Update the account with new code
-        await prisma.socialAccount.update({
+        await getPrismaClient().socialAccount.update({
           where: { id: existing.id },
           data: {
             verificationCode: code,
@@ -426,7 +425,7 @@ router.post('/instagram', async (req: Request, res: Response) => {
     verificationExpiresAt.setMinutes(verificationExpiresAt.getMinutes() + 60); // 60 minutes from now
 
     // Create social account
-    const socialAccount = await prisma.socialAccount.create({
+    const socialAccount = await getPrismaClient().socialAccount.create({
       data: {
         userId,
         platform: 'INSTAGRAM',
@@ -468,7 +467,7 @@ router.post('/:id/verify', async (req: Request, res: Response) => {
     }
 
     // Load social account
-    const socialAccount = await prisma.socialAccount.findUnique({
+    const socialAccount = await getPrismaClient().socialAccount.findUnique({
       where: { id },
     });
 
@@ -545,7 +544,7 @@ router.post('/:id/verify', async (req: Request, res: Response) => {
         
         console.log(`[Social Account Verify] Setting platformUserId to: ${platformUserId} for ${socialAccount.platform} account ${id}`);
         
-        const updated = await prisma.socialAccount.update({
+        const updated = await getPrismaClient().socialAccount.update({
           where: { id },
           data: {
             platformUserId,
@@ -622,7 +621,7 @@ router.get('/', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const accounts = await prisma.socialAccount.findMany({
+    const accounts = await getPrismaClient().socialAccount.findMany({
       where: {
         userId,
       },

@@ -1,8 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { getPrismaClient } from '../utils/prisma';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 /**
  * GET /admin/submissions
@@ -61,10 +60,10 @@ router.get('/submissions', async (req: Request, res: Response) => {
     const where = whereConditions.length > 0 ? { AND: whereConditions } : {};
 
     // Get total count for pagination
-    const total = await prisma.submission.count({ where });
+    const total = await getPrismaClient().submission.count({ where });
 
     // Calculate summary statistics using aggregation
-    const summaryData = await prisma.submission.aggregate({
+    const summaryData = await getPrismaClient().submission.aggregate({
       where,
       _count: {
         id: true,
@@ -78,7 +77,7 @@ router.get('/submissions', async (req: Request, res: Response) => {
     });
 
     // Count approved submissions
-    const approvedCount = await prisma.submission.count({
+    const approvedCount = await getPrismaClient().submission.count({
       where: {
         ...where,
         status: 'APPROVED',
@@ -107,7 +106,7 @@ router.get('/submissions', async (req: Request, res: Response) => {
     }
 
     // Fetch submissions with user and social account data (optimized, no N+1)
-    const submissions = await prisma.submission.findMany({
+    const submissions = await getPrismaClient().submission.findMany({
       where,
       include: {
         user: {
@@ -124,7 +123,7 @@ router.get('/submissions', async (req: Request, res: Response) => {
 
     // Get handles for each user (batch query to avoid N+1)
     const userIds = submissions.map(s => s.userId);
-    const socialAccounts = await prisma.socialAccount.findMany({
+    const socialAccounts = await getPrismaClient().socialAccount.findMany({
       where: {
         userId: { in: userIds },
                 status: 'VERIFIED',
@@ -222,7 +221,7 @@ router.get('/submissions/:id/details', async (req: Request, res: Response) => {
     const { id } = req.params;
 
     // Fetch submission with user data
-    const submission = await prisma.submission.findUnique({
+    const submission = await getPrismaClient().submission.findUnique({
       where: { id },
       include: {
         user: {
@@ -239,7 +238,7 @@ router.get('/submissions/:id/details', async (req: Request, res: Response) => {
     }
 
     // Get creator handle from verified social account
-    const socialAccount = await prisma.socialAccount.findFirst({
+    const socialAccount = await getPrismaClient().socialAccount.findFirst({
       where: {
         userId: submission.userId,
         platform: submission.platform,
@@ -253,7 +252,7 @@ router.get('/submissions/:id/details', async (req: Request, res: Response) => {
     const creatorHandle = socialAccount?.handle || null;
 
     // Fetch snapshots (at most 200, ordered ASC by capturedAt)
-    const snapshots = await prisma.metricSnapshot.findMany({
+    const snapshots = await getPrismaClient().metricSnapshot.findMany({
       where: {
         submissionId: id,
       },
@@ -370,7 +369,7 @@ router.post('/submissions/:id/approve', async (req: Request, res: Response) => {
     }
 
     // Fetch submission
-    const submission = await prisma.submission.findUnique({
+    const submission = await getPrismaClient().submission.findUnique({
       where: { id },
     });
 
@@ -406,7 +405,7 @@ router.post('/submissions/:id/approve', async (req: Request, res: Response) => {
     }
 
     // Update submission
-    const updated = await prisma.submission.update({
+    const updated = await getPrismaClient().submission.update({
       where: { id },
       data: updateData,
     });
@@ -445,7 +444,7 @@ router.post('/submissions/:id/reject', async (req: Request, res: Response) => {
     }
 
     // Fetch submission
-    const submission = await prisma.submission.findUnique({
+    const submission = await getPrismaClient().submission.findUnique({
       where: { id },
     });
 
@@ -473,7 +472,7 @@ router.post('/submissions/:id/reject', async (req: Request, res: Response) => {
     }
 
     // Update submission
-    const updated = await prisma.submission.update({
+    const updated = await getPrismaClient().submission.update({
       where: { id },
       data: {
         status: 'REJECTED',

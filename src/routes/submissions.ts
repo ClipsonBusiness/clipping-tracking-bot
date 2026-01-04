@@ -1,12 +1,11 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { getPrismaClient } from '../utils/prisma';
 import { YouTubeCollector } from '../collectors/youtubeCollector';
 import { TikTokCollector } from '../collectors/tiktokCollector';
 import { InstagramCollector } from '../collectors/instagramCollector';
 import { detectPlatformFromUrl, platformToRoute } from '../utils/platformDetector';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Lazy initialization to avoid errors if API key is not set
 let youtubeCollector: YouTubeCollector | null = null;
@@ -61,7 +60,7 @@ router.post('/youtube', async (req: Request, res: Response) => {
     const { videoId, canonicalUrl } = parsedUrl;
 
     // Check if submission already exists for this video
-    const existing = await prisma.submission.findUnique({
+    const existing = await getPrismaClient().submission.findUnique({
       where: {
         platform_contentId: {
           platform: 'YOUTUBE',
@@ -101,7 +100,7 @@ router.post('/youtube', async (req: Request, res: Response) => {
     }
 
     // Step 4: Ensure user has a VERIFIED SocialAccount on YOUTUBE with matching platformUserId
-    const verifiedAccount = await prisma.socialAccount.findFirst({
+    const verifiedAccount = await getPrismaClient().socialAccount.findFirst({
       where: {
         userId,
         platform: 'YOUTUBE',
@@ -122,7 +121,7 @@ router.post('/youtube', async (req: Request, res: Response) => {
 
     // Step 5: Create Submission with PENDING status
     const now = new Date();
-    const submission = await prisma.submission.create({
+    const submission = await getPrismaClient().submission.create({
       data: {
         userId,
         platform: 'YOUTUBE',
@@ -229,7 +228,7 @@ router.post('/tiktok', async (req: Request, res: Response) => {
     const { videoId, canonicalUrl } = parsedUrl;
 
     // Check if submission already exists
-    const existing = await prisma.submission.findUnique({
+    const existing = await getPrismaClient().submission.findUnique({
       where: {
         platform_contentId: {
           platform: 'TIKTOK',
@@ -283,7 +282,7 @@ router.post('/tiktok', async (req: Request, res: Response) => {
     console.log(`[TikTok Submission] User ID: ${userId}`);
     
     // Get ALL TikTok accounts for this user (regardless of status) to debug
-    const allTikTokAccounts = await prisma.socialAccount.findMany({
+    const allTikTokAccounts = await getPrismaClient().socialAccount.findMany({
       where: {
         userId,
         platform: 'TIKTOK',
@@ -300,7 +299,7 @@ router.post('/tiktok', async (req: Request, res: Response) => {
     console.log(`[TikTok Submission] All TikTok accounts for user:`, JSON.stringify(allTikTokAccounts, null, 2));
     
     // Get all verified TikTok accounts for this user to see what we have
-    const allVerifiedAccounts = await prisma.socialAccount.findMany({
+    const allVerifiedAccounts = await getPrismaClient().socialAccount.findMany({
       where: {
         userId,
         platform: 'TIKTOK',
@@ -316,7 +315,7 @@ router.post('/tiktok', async (req: Request, res: Response) => {
     
     console.log(`[TikTok Submission] Found ${allVerifiedAccounts.length} verified TikTok accounts:`, JSON.stringify(allVerifiedAccounts, null, 2));
     
-    const verifiedAccount = await prisma.socialAccount.findFirst({
+    const verifiedAccount = await getPrismaClient().socialAccount.findFirst({
       where: {
         userId,
         platform: 'TIKTOK',
@@ -350,7 +349,7 @@ router.post('/tiktok', async (req: Request, res: Response) => {
 
     // Step 5: Create Submission with PENDING status
     const now = new Date();
-    const submission = await prisma.submission.create({
+    const submission = await getPrismaClient().submission.create({
       data: {
         userId,
         platform: 'TIKTOK',
@@ -437,7 +436,7 @@ router.post('/instagram', async (req: Request, res: Response) => {
     const { mediaId, canonicalUrl } = parsedUrl;
 
     // Check if submission already exists
-    const existing = await prisma.submission.findUnique({
+    const existing = await getPrismaClient().submission.findUnique({
       where: {
         platform_contentId: {
           platform: 'INSTAGRAM',
@@ -485,7 +484,7 @@ router.post('/instagram', async (req: Request, res: Response) => {
     }
 
     // Step 4: Ensure user has a VERIFIED SocialAccount on INSTAGRAM with matching platformUserId
-    const verifiedAccount = await prisma.socialAccount.findFirst({
+    const verifiedAccount = await getPrismaClient().socialAccount.findFirst({
       where: {
         userId,
         platform: 'INSTAGRAM',
@@ -504,7 +503,7 @@ router.post('/instagram', async (req: Request, res: Response) => {
 
     // Step 5: Create Submission with PENDING status
     const now = new Date();
-    const submission = await prisma.submission.create({
+    const submission = await getPrismaClient().submission.create({
       data: {
         userId,
         platform: 'INSTAGRAM',
@@ -624,7 +623,7 @@ router.post('/:platform/batch', async (req: Request, res: Response) => {
             const { videoId, canonicalUrl } = parsedUrl;
 
             // Check if exists
-            const existing = await prisma.submission.findUnique({
+            const existing = await getPrismaClient().submission.findUnique({
               where: {
                 platform_contentId: {
                   platform: 'YOUTUBE',
@@ -643,7 +642,7 @@ router.post('/:platform/batch', async (req: Request, res: Response) => {
             const authorChannelId = authorInfo.authorChannelId;
 
             // Check verified account
-            const verifiedAccount = await prisma.socialAccount.findFirst({
+            const verifiedAccount = await getPrismaClient().socialAccount.findFirst({
               where: {
                 userId,
                 platform: 'YOUTUBE',
@@ -658,7 +657,7 @@ router.post('/:platform/batch', async (req: Request, res: Response) => {
 
             // Create submission
             const now = new Date();
-            submission = await prisma.submission.create({
+            submission = await getPrismaClient().submission.create({
               data: {
                 userId,
                 platform: 'YOUTUBE',
@@ -690,7 +689,7 @@ router.post('/:platform/batch', async (req: Request, res: Response) => {
             const parsedUrl = getTikTokCollector().parseTikTokUrl(url);
             const { videoId, canonicalUrl } = parsedUrl;
 
-            const existing = await prisma.submission.findUnique({
+            const existing = await getPrismaClient().submission.findUnique({
               where: {
                 platform_contentId: {
                   platform: 'TIKTOK',
@@ -707,7 +706,7 @@ router.post('/:platform/batch', async (req: Request, res: Response) => {
             const authorInfo = await getTikTokCollector().resolveVideoAuthorUserId(url);
             const authorUserId = String(authorInfo.authorUserId);
 
-            const verifiedAccount = await prisma.socialAccount.findFirst({
+            const verifiedAccount = await getPrismaClient().socialAccount.findFirst({
               where: {
                 userId,
                 platform: 'TIKTOK',
@@ -721,7 +720,7 @@ router.post('/:platform/batch', async (req: Request, res: Response) => {
             }
 
             const now = new Date();
-            submission = await prisma.submission.create({
+            submission = await getPrismaClient().submission.create({
               data: {
                 userId,
                 platform: 'TIKTOK',
@@ -753,7 +752,7 @@ router.post('/:platform/batch', async (req: Request, res: Response) => {
             const parsedUrl = getInstagramCollector().parseInstagramUrl(url);
             const { mediaId, canonicalUrl } = parsedUrl;
 
-            const existing = await prisma.submission.findUnique({
+            const existing = await getPrismaClient().submission.findUnique({
               where: {
                 platform_contentId: {
                   platform: 'INSTAGRAM',
@@ -772,7 +771,7 @@ router.post('/:platform/batch', async (req: Request, res: Response) => {
             const authorInfo = await getInstagramCollector().resolveMediaAuthorUserId(mediaUrl);
             const authorUserId = String(authorInfo.authorUserId);
 
-            const verifiedAccount = await prisma.socialAccount.findFirst({
+            const verifiedAccount = await getPrismaClient().socialAccount.findFirst({
               where: {
                 userId,
                 platform: 'INSTAGRAM',
@@ -786,7 +785,7 @@ router.post('/:platform/batch', async (req: Request, res: Response) => {
             }
 
             const now = new Date();
-            submission = await prisma.submission.create({
+            submission = await getPrismaClient().submission.create({
               data: {
                 userId,
                 platform: 'INSTAGRAM',
@@ -891,7 +890,7 @@ router.post('/auto', async (req: Request, res: Response) => {
       const { videoId, canonicalUrl } = parsedUrl;
 
       // Check if exists
-      const existing = await prisma.submission.findUnique({
+      const existing = await getPrismaClient().submission.findUnique({
         where: {
           platform_contentId: {
             platform: 'YOUTUBE',
@@ -913,7 +912,7 @@ router.post('/auto', async (req: Request, res: Response) => {
       const authorChannelId = authorInfo.authorChannelId;
 
       // Check verified account
-      const verifiedAccount = await prisma.socialAccount.findFirst({
+      const verifiedAccount = await getPrismaClient().socialAccount.findFirst({
         where: {
           userId,
           platform: 'YOUTUBE',
@@ -931,7 +930,7 @@ router.post('/auto', async (req: Request, res: Response) => {
 
       // Create submission
       const now = new Date();
-      const submission = await prisma.submission.create({
+      const submission = await getPrismaClient().submission.create({
         data: {
           userId,
           platform: 'YOUTUBE',
@@ -967,7 +966,7 @@ router.post('/auto', async (req: Request, res: Response) => {
       const { videoId, canonicalUrl } = parsedUrl;
 
       // Check if exists
-      const existing = await prisma.submission.findUnique({
+      const existing = await getPrismaClient().submission.findUnique({
         where: {
           platform_contentId: {
             platform: 'TIKTOK',
@@ -989,7 +988,7 @@ router.post('/auto', async (req: Request, res: Response) => {
       const authorUserId = String(authorInfo.authorUserId);
 
       // Check verified account
-      const verifiedAccount = await prisma.socialAccount.findFirst({
+      const verifiedAccount = await getPrismaClient().socialAccount.findFirst({
         where: {
           userId,
           platform: 'TIKTOK',
@@ -1007,7 +1006,7 @@ router.post('/auto', async (req: Request, res: Response) => {
 
       // Create submission
       const now = new Date();
-      const submission = await prisma.submission.create({
+      const submission = await getPrismaClient().submission.create({
         data: {
           userId,
           platform: 'TIKTOK',
@@ -1043,7 +1042,7 @@ router.post('/auto', async (req: Request, res: Response) => {
       const { mediaId, canonicalUrl } = parsedUrl;
 
       // Check if exists
-      const existing = await prisma.submission.findUnique({
+      const existing = await getPrismaClient().submission.findUnique({
         where: {
           platform_contentId: {
             platform: 'INSTAGRAM',
@@ -1067,7 +1066,7 @@ router.post('/auto', async (req: Request, res: Response) => {
       const authorUserId = String(authorInfo.authorUserId);
 
       // Check verified account
-      const verifiedAccount = await prisma.socialAccount.findFirst({
+      const verifiedAccount = await getPrismaClient().socialAccount.findFirst({
         where: {
           userId,
           platform: 'INSTAGRAM',
@@ -1085,7 +1084,7 @@ router.post('/auto', async (req: Request, res: Response) => {
 
       // Create submission
       const now = new Date();
-      const submission = await prisma.submission.create({
+      const submission = await getPrismaClient().submission.create({
         data: {
           userId,
           platform: 'INSTAGRAM',
