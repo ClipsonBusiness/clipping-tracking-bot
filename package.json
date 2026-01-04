@@ -17,7 +17,9 @@
     "prisma:generate": "prisma generate",
     "vercel-build": "prisma generate && tsc",
     "deploy": "./deploy.sh",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "railway:build": "prisma generate && tsc",
+    "railway:start": "npx prisma migrate deploy && node dist/server.js"
   },
   "keywords": [],
   "author": "",
