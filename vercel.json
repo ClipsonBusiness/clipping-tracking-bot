@@ -7,7 +7,15 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/index.ts"
+      "destination": "/api"
+    },
+    {
+      "source": "/admin/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/health",
+      "destination": "/api"
     },
     {
       "source": "/(.*)",

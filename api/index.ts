@@ -12,13 +12,26 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Routes
+// Routes - Vercel rewrites handle the /api prefix, so routes should be relative
 app.use('/api', apiRoutes);
 app.use('/admin', adminMiddleware, adminRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Root path
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Clipping Tracking Bot API',
+    version: '1.0.0',
+    endpoints: {
+      health: '/health',
+      api: '/api',
+      admin: '/admin'
+    }
+  });
 });
 
 // Export as Vercel serverless function
