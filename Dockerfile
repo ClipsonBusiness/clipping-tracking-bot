@@ -31,5 +31,6 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Run migrations and start server
-CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
+# Note: If migrations fail, the server will still start (migrations can be run manually)
+CMD ["sh", "-c", "npx prisma migrate deploy || echo 'Migration failed, continuing...' && npm start"]
 

@@ -54,12 +54,18 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server is running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`DATABASE_URL: ${process.env.DATABASE_URL ? '✅ Set' : '❌ Missing'}`);
+  console.log(`REDIS_URL: ${process.env.REDIS_URL ? '✅ Set' : '❌ Missing'}`);
   
   // Start metrics scheduler
-  metricsSchedulerInterval = startMetricsScheduler();
+  try {
+    metricsSchedulerInterval = startMetricsScheduler();
+  } catch (error) {
+    console.error('Failed to start metrics scheduler:', error);
+  }
 });
 
 // Graceful shutdown
