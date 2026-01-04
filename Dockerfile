@@ -2,7 +2,7 @@
 FROM node:20-alpine
 
 # Install build dependencies and OpenSSL (required for Prisma)
-RUN apk add --no-cache python3 make g++ openssl1.1-compat libssl1.1
+RUN apk add --no-cache python3 make g++ openssl openssl-dev libc6-compat
 
 # Set working directory
 WORKDIR /app
