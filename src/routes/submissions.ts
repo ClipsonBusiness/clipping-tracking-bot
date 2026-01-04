@@ -1004,11 +1004,30 @@ router.post('/auto', async (req: Request, res: Response) => {
         });
       }
 
+      // Verify user is member of campaign if campaignId provided
+      if (campaignId) {
+        const membership = await getPrismaClient().campaignMember.findUnique({
+          where: {
+            userId_campaignId: {
+              userId,
+              campaignId,
+            },
+          },
+        });
+        if (!membership) {
+          return res.status(403).json({ 
+            error: 'Not a member of this campaign',
+            message: 'You must join the campaign before submitting content',
+          });
+        }
+      }
+
       // Create submission
       const now = new Date();
       const submission = await getPrismaClient().submission.create({
         data: {
           userId,
+          campaignId: campaignId || null,
           platform: 'TIKTOK',
           contentId: videoId,
           canonicalUrl,
