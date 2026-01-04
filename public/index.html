@@ -931,89 +931,49 @@
                         accountIdInput.value = data.socialAccountId;
                     }
                     
-                    // Beautiful verification code display
+                    // Simple, clean verification code display
                     responseEl.innerHTML = `
                         <div style="
-                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                            border-radius: 16px;
-                            padding: 40px 30px;
-                            text-align: center;
-                            box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
-                            animation: fadeIn 0.5s ease-in;
+                            background: #f9fafb;
+                            border: 1px solid #e5e7eb;
+                            border-radius: 8px;
+                            padding: 20px;
+                            display: flex;
+                            align-items: center;
+                            gap: 12px;
                         ">
                             <div style="
-                                background: rgba(255, 255, 255, 0.15);
-                                backdrop-filter: blur(10px);
-                                border-radius: 12px;
-                                padding: 30px 20px;
-                                margin-bottom: 20px;
-                                border: 1px solid rgba(255, 255, 255, 0.2);
-                            ">
-                                <div style="
-                                    font-size: 0.9em;
-                                    color: rgba(255, 255, 255, 0.9);
-                                    margin-bottom: 12px;
-                                    text-transform: uppercase;
-                                    letter-spacing: 1px;
-                                    font-weight: 600;
-                                ">Your Verification Code</div>
-                                <div style="
-                                    font-size: 2.5em;
-                                    font-weight: bold;
-                                    color: #fff;
-                                    font-family: 'Courier New', monospace;
-                                    letter-spacing: 4px;
-                                    margin: 15px 0;
-                                    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-                                    cursor: pointer;
-                                    transition: transform 0.2s;
-                                    user-select: all;
-                                " id="verification-code" onclick="copyVerificationCode('${data.code}')" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                                    ${data.code}
-                                </div>
-                                <button onclick="copyVerificationCode('${data.code}')" style="
-                                    background: rgba(255, 255, 255, 0.2);
-                                    border: 1px solid rgba(255, 255, 255, 0.3);
-                                    color: white;
-                                    padding: 8px 20px;
-                                    border-radius: 20px;
-                                    font-size: 0.85em;
-                                    cursor: pointer;
-                                    transition: all 0.3s;
-                                    margin-top: 10px;
-                                " onmouseover="this.style.background='rgba(255,255,255,0.3)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'; this.style.transform='translateY(0)'">
-                                    📋 Copy Code
-                                </button>
-                            </div>
-                            <div style="
-                                display: flex;
-                                align-items: center;
-                                justify-content: center;
-                                gap: 8px;
-                                color: rgba(255, 255, 255, 0.95);
-                                font-size: 1.1em;
-                                font-weight: 500;
-                            ">
-                                <span style="font-size: 1.3em;">📝</span>
-                                <span>Add this code to your ${platform} bio/description</span>
-                            </div>
-                            <div style="
-                                margin-top: 15px;
-                                padding: 12px;
-                                background: rgba(255, 255, 255, 0.1);
-                                border-radius: 8px;
+                                flex: 1;
+                                font-family: 'Courier New', monospace;
+                                font-size: 1.2em;
+                                font-weight: 600;
+                                color: #333;
+                                letter-spacing: 1px;
+                            ">${data.code}</div>
+                            <button onclick="copyVerificationCode('${data.code}')" style="
+                                background: #667eea;
+                                color: white;
+                                border: none;
+                                padding: 8px 16px;
+                                border-radius: 6px;
                                 font-size: 0.9em;
-                                color: rgba(255, 255, 255, 0.85);
-                            ">
-                                💡 <strong>Tip:</strong> After adding the code, click "Check Account" below to verify
-                            </div>
+                                cursor: pointer;
+                                transition: background 0.2s;
+                                white-space: nowrap;
+                            " onmouseover="this.style.background='#5568d3'" onmouseout="this.style.background='#667eea'">
+                                📋 Copy
+                            </button>
                         </div>
-                        <style>
-                            @keyframes fadeIn {
-                                from { opacity: 0; transform: translateY(-10px); }
-                                to { opacity: 1; transform: translateY(0); }
-                            }
-                        </style>
+                        <div style="
+                            margin-top: 12px;
+                            padding: 10px;
+                            background: #f0f9ff;
+                            border-radius: 6px;
+                            font-size: 0.9em;
+                            color: #0369a1;
+                        ">
+                            📝 Add this code to your ${platform} bio/description, then click "Check Account" to verify
+                        </div>
                     `;
                     responseEl.className = 'response show';
                 }
