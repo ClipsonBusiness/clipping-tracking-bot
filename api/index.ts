@@ -1,6 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import express from 'express';
 import cors from 'cors';
+import dotenv from 'dotenv';
+
+// Load environment variables (Vercel provides them, but dotenv helps with local dev)
+dotenv.config();
+
 import apiRoutes from '../src/routes';
 import adminRoutes from '../src/routes/admin';
 import { adminMiddleware } from '../src/middleware/admin';
