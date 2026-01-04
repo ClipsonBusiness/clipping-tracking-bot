@@ -10,7 +10,7 @@ dotenv.config();
 const app = express();
 const prisma = new PrismaClient();
 // Railway provides PORT via environment variable, default to 3001 for local
-const PORT = process.env.PORT || 3001;
+const PORT = parseInt(process.env.PORT || '3001', 10);
 
 // Middleware
 app.use(cors());
