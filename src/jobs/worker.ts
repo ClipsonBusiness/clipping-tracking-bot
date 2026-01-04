@@ -1,30 +1,36 @@
 import { createWorker } from './queue';
 import { processExampleJob } from './exampleJob';
 
-// Create and start workers
-const exampleWorker = createWorker('default', async (job: any) => {
-  switch (job.name) {
-    case 'example-job':
-      return await processExampleJob(job);
-    default:
-      throw new Error(`Unknown job type: ${job.name}`);
-  }
-});
+// Create and start workers (only if Redis is available)
+let exampleWorker: any = null;
 
-// Worker event handlers
-exampleWorker.on('completed', (job) => {
-  console.log(`Job ${job?.id} has been completed`);
-});
+try {
+  exampleWorker = createWorker('default', async (job: any) => {
+    switch (job.name) {
+      case 'example-job':
+        return await processExampleJob(job);
+      default:
+        throw new Error(`Unknown job type: ${job.name}`);
+    }
+  });
 
-exampleWorker.on('failed', (job, err) => {
-  console.error(`Job ${job?.id} has failed with error:`, err);
-});
+  // Worker event handlers
+  exampleWorker.on('completed', (job) => {
+    console.log(`Job ${job?.id} has been completed`);
+  });
 
-exampleWorker.on('error', (err) => {
-  console.error('Worker error:', err);
-});
+  exampleWorker.on('failed', (job, err) => {
+    console.error(`Job ${job?.id} has failed with error:`, err);
+  });
 
-console.log('Workers started');
+  exampleWorker.on('error', (err) => {
+    console.error('Worker error:', err);
+  });
+
+  console.log('Workers started');
+} catch (error: any) {
+  console.warn('⚠️ Failed to create worker (Redis may be unavailable):', error.message);
+}
 
 export { exampleWorker };
 

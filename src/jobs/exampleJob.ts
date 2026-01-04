@@ -9,6 +9,9 @@ export interface ExampleJobData {
 
 // Add job to queue
 export const addExampleJob = async (data: ExampleJobData) => {
+  if (!defaultQueue) {
+    throw new Error('Default queue not available. Redis connection required.');
+  }
   return await defaultQueue.add('example-job', data, {
     attempts: 3,
     backoff: {

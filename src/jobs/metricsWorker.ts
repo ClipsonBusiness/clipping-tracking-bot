@@ -1,11 +1,18 @@
 import { Worker, Job } from 'bullmq';
-import IORedis from 'ioredis';
 import { PrismaClient } from '@prisma/client';
 import { YouTubeCollector } from '../collectors/youtubeCollector';
 import { TikTokCollector } from '../collectors/tiktokCollector';
 import { InstagramCollector } from '../collectors/instagramCollector';
+import { getPrismaClient } from '../utils/prisma';
 
-const prisma = new PrismaClient();
+// Get connection from queue.ts (lazy to avoid crashes)
+let connection: any = null;
+try {
+  const queueModule = require('./queue');
+  connection = queueModule.connection;
+} catch (err) {
+  // Connection not available - worker will be null
+}
 
 // Lazy initialization of collectors to avoid errors if API keys are not set
 let youtubeCollector: YouTubeCollector | null = null;
@@ -29,10 +36,7 @@ function getInstagramCollector(): InstagramCollector {
   );
 }
 
-// Redis connection
-const connection = new IORedis(process.env.REDIS_URL || 'redis://localhost:6379', {
-  maxRetriesPerRequest: null,
-});
+// Connection is imported from queue.ts above
 
 export interface MetricsJobData {
   submissionId: string;
@@ -48,6 +52,7 @@ const processMetricsJob = async (job: Job<MetricsJobData>) => {
 
   try {
     // Load submission
+    const prisma = getPrismaClient();
     const submission = await prisma.submission.findUnique({
       where: { id: submissionId },
     });
@@ -123,28 +128,40 @@ const processMetricsJob = async (job: Job<MetricsJobData>) => {
   }
 };
 
-// Create and start metrics worker
-export const metricsWorker = new Worker<MetricsJobData>(
-  'metrics',
-  processMetricsJob,
-  {
-    connection,
-    concurrency: 5, // Process up to 5 jobs concurrently
+// Create and start metrics worker (only if Redis is available)
+let _metricsWorker: Worker<MetricsJobData> | null = null;
+
+if (connection) {
+  try {
+    _metricsWorker = new Worker<MetricsJobData>(
+      'metrics',
+      processMetricsJob,
+      {
+        connection,
+        concurrency: 5, // Process up to 5 jobs concurrently
+      }
+    );
+
+    // Worker event handlers
+    _metricsWorker.on('completed', (job) => {
+      console.log(`[Metrics Worker] Job ${job?.id} completed successfully`);
+    });
+
+    _metricsWorker.on('failed', (job, err) => {
+      console.error(`[Metrics Worker] Job ${job?.id} failed:`, err.message);
+    });
+
+    _metricsWorker.on('error', (err) => {
+      console.error('[Metrics Worker] Worker error:', err);
+    });
+
+    console.log('[Metrics Worker] Metrics worker started');
+  } catch (error: any) {
+    console.warn('[Metrics Worker] Failed to create worker:', error.message);
   }
-);
+} else {
+  console.warn('[Metrics Worker] Redis not available - worker disabled');
+}
 
-// Worker event handlers
-metricsWorker.on('completed', (job) => {
-  console.log(`[Metrics Worker] Job ${job?.id} completed successfully`);
-});
-
-metricsWorker.on('failed', (job, err) => {
-  console.error(`[Metrics Worker] Job ${job?.id} failed:`, err.message);
-});
-
-metricsWorker.on('error', (err) => {
-  console.error('[Metrics Worker] Worker error:', err);
-});
-
-console.log('[Metrics Worker] Metrics worker started');
+export const metricsWorker = _metricsWorker;
 

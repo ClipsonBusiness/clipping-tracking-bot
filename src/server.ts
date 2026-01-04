@@ -1,14 +1,17 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
 import { createQueue } from './jobs/queue';
+import { getPrismaClient } from './utils/prisma';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
-const prisma = new PrismaClient();
+
+// Initialize Prisma with lazy loading and error handling
+let prisma: any = null;
+
 // Railway provides PORT via environment variable, default to 3001 for local
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
@@ -73,11 +76,26 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 });
 
 // Start server
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', async () => {
   console.log(`🚀 Server is running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`DATABASE_URL: ${process.env.DATABASE_URL ? '✅ Set' : '❌ Missing'}`);
   console.log(`REDIS_URL: ${process.env.REDIS_URL ? '✅ Set' : '❌ Missing'}`);
+  
+  // Initialize Prisma (non-blocking)
+  try {
+    if (process.env.DATABASE_URL) {
+      prisma = getPrismaClient();
+      await prisma.$connect();
+      console.log('✅ Database connected successfully');
+    } else {
+      console.warn('⚠️ DATABASE_URL not set - database operations will fail');
+    }
+  } catch (dbError: any) {
+    console.error('❌ Database connection failed:', dbError.message);
+    console.error('⚠️ App will continue but database operations may fail');
+    // Don't exit - let the app start and handle errors gracefully
+  }
   
   // Start metrics scheduler (only if Redis is available)
   if (process.env.REDIS_URL) {
@@ -102,7 +120,13 @@ process.on('SIGTERM', async () => {
   if (metricsSchedulerInterval) {
     clearInterval(metricsSchedulerInterval);
   }
-  await prisma.$disconnect();
+  if (prisma) {
+    try {
+      await prisma.$disconnect();
+    } catch (err) {
+      console.warn('Error disconnecting Prisma:', err);
+    }
+  }
   if (queue) await queue.close().catch(() => {});
   if (metricsQueue) await metricsQueue.close().catch(() => {});
   if (metricsWorker) await metricsWorker.close().catch(() => {});
@@ -114,7 +138,13 @@ process.on('SIGINT', async () => {
   if (metricsSchedulerInterval) {
     clearInterval(metricsSchedulerInterval);
   }
-  await prisma.$disconnect();
+  if (prisma) {
+    try {
+      await prisma.$disconnect();
+    } catch (err) {
+      console.warn('Error disconnecting Prisma:', err);
+    }
+  }
   if (queue) await queue.close().catch(() => {});
   if (metricsQueue) await metricsQueue.close().catch(() => {});
   if (metricsWorker) await metricsWorker.close().catch(() => {});
