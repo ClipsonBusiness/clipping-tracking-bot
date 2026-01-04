@@ -23,8 +23,8 @@ COPY . .
 # Build TypeScript
 RUN npm run build
 
-# Expose port
-EXPOSE 3001
+# Expose port (Railway will set PORT env var)
+EXPOSE ${PORT:-3001}
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
