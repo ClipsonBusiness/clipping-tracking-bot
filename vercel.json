@@ -6,20 +6,8 @@
   "framework": null,
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api"
-    },
-    {
-      "source": "/admin/(.*)",
-      "destination": "/api"
-    },
-    {
-      "source": "/health",
-      "destination": "/api"
-    },
-    {
       "source": "/(.*)",
-      "destination": "/public/$1"
+      "destination": "/api"
     }
   ],
   "functions": {
