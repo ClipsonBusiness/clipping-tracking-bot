@@ -37,5 +37,9 @@ router.use('/social-accounts', socialAccountsRoutes);
 import submissionsRoutes from './submissions';
 router.use('/submissions', submissionsRoutes);
 
+// Stats/Dashboard routes
+import statsRoutes from './stats';
+router.use('/stats', statsRoutes);
+
 export default router;
 
