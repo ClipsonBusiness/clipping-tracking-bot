@@ -1,8 +1,8 @@
 # Use Node.js 20
 FROM node:20-alpine
 
-# Install build dependencies
-RUN apk add --no-cache python3 make g++
+# Install build dependencies and OpenSSL (required for Prisma)
+RUN apk add --no-cache python3 make g++ openssl1.1-compat libssl1.1
 
 # Set working directory
 WORKDIR /app
