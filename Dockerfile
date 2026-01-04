@@ -1,8 +1,14 @@
-# Use Node.js 20
-FROM node:20-alpine
+# Use Node.js 20 (Debian-based for better Prisma compatibility)
+FROM node:20-slim
 
 # Install build dependencies and OpenSSL (required for Prisma)
-RUN apk add --no-cache python3 make g++ openssl openssl-dev libc6-compat
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    openssl \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
