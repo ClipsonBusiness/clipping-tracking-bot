@@ -110,7 +110,7 @@ router.get('/submissions', async (req: Request, res: Response) => {
       orderBy = { latestViews: 'asc' };
     }
 
-    // Fetch submissions with user and social account data (optimized, no N+1)
+    // Fetch submissions with user, campaign, and social account data (optimized, no N+1)
     const submissions = await getPrismaClient().submission.findMany({
       where,
       include: {
@@ -118,6 +118,12 @@ router.get('/submissions', async (req: Request, res: Response) => {
           select: {
             id: true,
             email: true,
+          },
+        },
+        campaign: {
+          select: {
+            id: true,
+            name: true,
           },
         },
       },
