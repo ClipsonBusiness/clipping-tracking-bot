@@ -19,17 +19,36 @@ app.use(express.json());
 // Serve static files from public directory
 app.use(express.static('public'));
 
-// Initialize BullMQ queue
-const queue = createQueue();
-
-// Initialize workers (import to start processing jobs)
-import './jobs/worker';
-import { metricsWorker } from './jobs/metricsWorker';
-import { startMetricsScheduler } from './jobs/metricsScheduler';
-import { metricsQueue } from './jobs/metricsQueue';
-
-// Store scheduler interval for cleanup
+// Initialize BullMQ queue (optional - won't crash if Redis unavailable)
+let queue: any = null;
+let metricsWorker: any = null;
+let metricsQueue: any = null;
 let metricsSchedulerInterval: NodeJS.Timeout | null = null;
+
+try {
+  if (process.env.REDIS_URL) {
+    queue = createQueue();
+    // Initialize workers only if Redis is available
+    import('./jobs/worker').catch(err => {
+      console.warn('⚠️ Failed to load worker (Redis may be unavailable):', err.message);
+    });
+    import('./jobs/metricsWorker').then(module => {
+      metricsWorker = module.metricsWorker;
+    }).catch(err => {
+      console.warn('⚠️ Failed to load metrics worker:', err.message);
+    });
+    import('./jobs/metricsQueue').then(module => {
+      metricsQueue = module.metricsQueue;
+    }).catch(err => {
+      console.warn('⚠️ Failed to load metrics queue:', err.message);
+    });
+  } else {
+    console.warn('⚠️ REDIS_URL not set - workers and queues disabled');
+  }
+} catch (error: any) {
+  console.warn('⚠️ Failed to initialize queues/workers:', error.message);
+  console.warn('⚠️ App will continue without background job processing');
+}
 
 // Health check route
 app.get('/health', (req, res) => {
@@ -60,11 +79,20 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`DATABASE_URL: ${process.env.DATABASE_URL ? '✅ Set' : '❌ Missing'}`);
   console.log(`REDIS_URL: ${process.env.REDIS_URL ? '✅ Set' : '❌ Missing'}`);
   
-  // Start metrics scheduler
-  try {
-    metricsSchedulerInterval = startMetricsScheduler();
-  } catch (error) {
-    console.error('Failed to start metrics scheduler:', error);
+  // Start metrics scheduler (only if Redis is available)
+  if (process.env.REDIS_URL) {
+    try {
+      import('./jobs/metricsScheduler').then(module => {
+        metricsSchedulerInterval = module.startMetricsScheduler();
+        console.log('✅ Metrics scheduler started');
+      }).catch(err => {
+        console.warn('⚠️ Failed to start metrics scheduler:', err.message);
+      });
+    } catch (error: any) {
+      console.warn('⚠️ Failed to start metrics scheduler:', error.message);
+    }
+  } else {
+    console.warn('⚠️ Metrics scheduler disabled (REDIS_URL not set)');
   }
 });
 
@@ -75,9 +103,9 @@ process.on('SIGTERM', async () => {
     clearInterval(metricsSchedulerInterval);
   }
   await prisma.$disconnect();
-  await queue.close();
-  await metricsQueue.close();
-  await metricsWorker.close();
+  if (queue) await queue.close().catch(() => {});
+  if (metricsQueue) await metricsQueue.close().catch(() => {});
+  if (metricsWorker) await metricsWorker.close().catch(() => {});
   process.exit(0);
 });
 
@@ -87,9 +115,9 @@ process.on('SIGINT', async () => {
     clearInterval(metricsSchedulerInterval);
   }
   await prisma.$disconnect();
-  await queue.close();
-  await metricsQueue.close();
-  await metricsWorker.close();
+  if (queue) await queue.close().catch(() => {});
+  if (metricsQueue) await metricsQueue.close().catch(() => {});
+  if (metricsWorker) await metricsWorker.close().catch(() => {});
   process.exit(0);
 });
 
