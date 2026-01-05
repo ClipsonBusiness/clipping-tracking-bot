@@ -894,18 +894,31 @@
         const API_BASE = window.location.origin;
 
         async function checkStatus() {
+            const statusEl = document.getElementById('status');
+            if (!statusEl) return;
+            
             try {
-                const response = await fetch(`${API_BASE}/health`);
+                statusEl.textContent = 'Checking server status...';
+                statusEl.className = 'status offline';
+                
+                const response = await fetch(`${API_BASE}/health`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                
                 if (response.ok) {
                     const data = await response.json();
-                    document.getElementById('status').textContent = `✅ Server Online - ${data.timestamp}`;
-                    document.getElementById('status').className = 'status online';
+                    statusEl.textContent = `✔ Server Online - ${data.timestamp || new Date().toISOString()}`;
+                    statusEl.className = 'status online';
                 } else {
-                    throw new Error('Server not responding');
+                    throw new Error(`Server returned ${response.status}`);
                 }
             } catch (error) {
-                document.getElementById('status').textContent = '❌ Server Offline';
-                document.getElementById('status').className = 'status offline';
+                console.error('Server status check failed:', error);
+                statusEl.textContent = '❌ Server Offline';
+                statusEl.className = 'status offline';
             }
         }
 
