@@ -467,15 +467,62 @@ router.get('/me', async (req: Request, res: Response) => {
     }
 
     const prisma = getPrismaClient();
-    const user = await prisma.user.findUnique({
-      where: { id: session.userId },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        createdAt: true,
-      },
-    });
+    
+    // Check which columns exist
+    let usernameColumnExists: boolean = false;
+    try {
+      const columns = await prisma.$queryRaw<Array<{column_name: string}>>`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' AND table_name = 'User' 
+        AND column_name = 'username'
+      `;
+      usernameColumnExists = columns.length > 0;
+    } catch (checkError: any) {
+      usernameColumnExists = false;
+    }
+
+    let user: any = null;
+    
+    if (usernameColumnExists) {
+      // Username column exists, use Prisma normally
+      try {
+        user = await prisma.user.findUnique({
+          where: { id: session.userId },
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            createdAt: true,
+            username: true,
+          },
+        });
+      } catch (prismaError: any) {
+        // If Prisma fails, fall back to raw SQL
+        if (prismaError.message?.includes('username') && prismaError.message?.includes('does not exist')) {
+          usernameColumnExists = false;
+        } else {
+          throw prismaError;
+        }
+      }
+    }
+    
+    // Use raw SQL if username column doesn't exist or Prisma failed
+    if (!user) {
+      const result = await prisma.$queryRawUnsafe<Array<{id: string; email: string; role: string; createdAt: string}>>(
+        `SELECT id, email, role, "createdAt" FROM "User" WHERE id = $1 LIMIT 1`,
+        session.userId
+      );
+      if (result[0]) {
+        user = {
+          id: result[0].id,
+          email: result[0].email,
+          role: result[0].role,
+          createdAt: new Date(result[0].createdAt),
+          username: null,
+        };
+      }
+    }
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -483,7 +530,8 @@ router.get('/me', async (req: Request, res: Response) => {
 
     res.json({ user });
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to get user info' });
+    console.error('Error in /api/auth/me:', error);
+    res.status(500).json({ error: 'Failed to get user info', message: error.message });
   }
 });
 
