@@ -1327,6 +1327,12 @@
             if (!detectedPlatform) {
                 responseEl.textContent = 'Could not detect platform. Please use a YouTube, TikTok, or Instagram URL.';
                 responseEl.className = 'response show error';
+                // Re-enable button
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.style.opacity = '1';
+                    submitButton.style.cursor = 'pointer';
+                }
                 return;
             }
 
