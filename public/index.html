@@ -934,14 +934,24 @@
                 return;
             }
 
+            // Get auth token from localStorage
+            const token = localStorage.getItem('authToken');
+            const headers = {
+                'Content-Type': 'application/json',
+            };
+            
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            } else {
+                // Fallback to test user for backwards compatibility
+                headers['x-user-id'] = 'test-user-123';
+                headers['x-user-role'] = 'CLIPPER';
+            }
+
             try {
                 const response = await fetch(`${API_BASE}/api/social-accounts/${platform}`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-user-id': 'test-user-123',
-                        'x-user-role': 'CLIPPER'
-                    },
+                    headers: headers,
                     body: JSON.stringify({ handle })
                 });
 
@@ -1023,12 +1033,21 @@
             listEl.style.display = 'block';
             listEl.innerHTML = '<div style="padding: 10px; color: #666;">Loading your accounts...</div>';
 
+            // Get auth token from localStorage
+            const token = localStorage.getItem('authToken');
+            const headers = {};
+            
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            } else {
+                // Fallback to test user for backwards compatibility
+                headers['x-user-id'] = 'test-user-123';
+                headers['x-user-role'] = 'CLIPPER';
+            }
+
             try {
                 const response = await fetch(`${API_BASE}/api/social-accounts`, {
-                    headers: {
-                        'x-user-id': 'test-user-123',
-                        'x-user-role': 'CLIPPER'
-                    }
+                    headers: headers
                 });
 
                 const data = await response.json();
