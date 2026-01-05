@@ -77,6 +77,21 @@ router.post('/register', async (req: Request, res: Response) => {
 
     const prisma = getPrismaClient();
 
+    // First, check if username column exists by trying a safe query
+    let usernameColumnExists = false;
+    try {
+      const result = await prisma.$queryRaw<Array<{column_name: string}>>`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' AND table_name = 'User' AND column_name = 'username'
+      `;
+      usernameColumnExists = result.length > 0;
+      console.log('Username column exists:', usernameColumnExists);
+    } catch (checkError: any) {
+      console.warn('Could not check username column, assuming it does not exist:', checkError.message);
+      usernameColumnExists = false;
+    }
+
     // Check if user already exists by email
     const existingEmail = await prisma.user.findUnique({
       where: { email: trimmedEmail },
@@ -86,34 +101,19 @@ router.post('/register', async (req: Request, res: Response) => {
       return res.status(409).json({ error: 'User with this email already exists' });
     }
 
-    // Skip username uniqueness check for now (column may not exist yet)
-    // Once migration runs, we can re-enable this
-    // For now, just skip it to avoid errors
-    let usernameColumnExists = false;
-    if (trimmedUsername && trimmedUsername.length > 0) {
-      // Try to check if username column exists using a safe method
+    // Check username uniqueness ONLY if column exists
+    if (usernameColumnExists && trimmedUsername && trimmedUsername.length > 0) {
       try {
-        // Use raw query to check if column exists without causing Prisma errors
-        const result = await prisma.$queryRaw<Array<{column_name: string}>>`
-          SELECT column_name 
-          FROM information_schema.columns 
-          WHERE table_name = 'User' AND column_name = 'username'
-        `;
-        usernameColumnExists = result.length > 0;
-        
-        if (usernameColumnExists) {
-          // Column exists, check uniqueness
-          const existingUsername = await prisma.user.findFirst({
-            where: { username: trimmedUsername },
-          });
+        const existingUsername = await prisma.user.findFirst({
+          where: { username: trimmedUsername },
+        });
 
-          if (existingUsername) {
-            return res.status(409).json({ error: 'Username already taken' });
-          }
+        if (existingUsername) {
+          return res.status(409).json({ error: 'Username already taken' });
         }
-      } catch (checkError: any) {
-        // If check fails, assume column doesn't exist
-        console.warn('Could not check username column, assuming it does not exist:', checkError.message);
+      } catch (usernameError: any) {
+        // If this fails, username column might not actually exist
+        console.warn('Username uniqueness check failed, skipping:', usernameError.message);
         usernameColumnExists = false;
       }
     }
@@ -143,20 +143,38 @@ router.post('/register', async (req: Request, res: Response) => {
         data: userData,
       });
       
-      // Fetch user without trying to select username (in case column doesn't exist)
-      user = await prisma.user.findUnique({
-        where: { id: user.id },
-        select: {
-          id: true,
-          email: true,
-          role: true,
-          createdAt: true,
-        },
-      });
+      // Fetch user - only select fields that definitely exist
+      try {
+        user = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            createdAt: true,
+            ...(usernameColumnExists ? { username: true } : {}),
+          },
+        });
+      } catch (fetchError: any) {
+        // If fetch fails due to username, try without it
+        if (fetchError.message?.includes('username')) {
+          user = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: {
+              id: true,
+              email: true,
+              role: true,
+              createdAt: true,
+            },
+          });
+        } else {
+          throw fetchError;
+        }
+      }
       
       // Add username to response (for frontend compatibility)
       if (user) {
-        (user as any).username = trimmedUsername || null;
+        (user as any).username = (usernameColumnExists && trimmedUsername) ? trimmedUsername : null;
       }
     } catch (createError: any) {
       // If username column doesn't exist yet (migration not run), try without it
@@ -190,7 +208,7 @@ router.post('/register', async (req: Request, res: Response) => {
           
           // Add username to response manually (for frontend)
           if (user) {
-            (user as any).username = trimmedUsername || null;
+            (user as any).username = null; // Column doesn't exist, so username is null
           } else {
             throw new Error('Failed to create user');
           }
