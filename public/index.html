@@ -1325,7 +1325,20 @@
                         output += `\n\n📋 Details: ${data.details.substring(0, 200)}`;
                     }
                 } else if (response.status === 403) {
-                    output += `\n\n⚠️ Author mismatch. Make sure the content is from your verified ${detectedPlatform} account.`;
+                    if (data.error === 'AUTHOR_MISMATCH') {
+                        output += `\n\n⚠️ Author Mismatch Error\n`;
+                        output += `\nThe video/post you're trying to submit is not from your verified ${detectedPlatform} account.\n`;
+                        output += `\nTo fix this:\n`;
+                        output += `1. Go to "Social Account Management" section above\n`;
+                        output += `2. Verify the ${detectedPlatform} account that owns this content\n`;
+                        output += `3. Make sure you're submitting content from that verified account\n`;
+                        if (data.authorChannelId || data.authorUserId) {
+                            output += `\nVideo/Post Author ID: ${data.authorChannelId || data.authorUserId}\n`;
+                            output += `This ID must match your verified account's platform user ID.\n`;
+                        }
+                    } else {
+                        output += `\n\n⚠️ Author mismatch. Make sure the content is from your verified ${detectedPlatform} account.`;
+                    }
                 } else if (response.status === 409) {
                     output += '\n\nℹ️ This content has already been submitted.';
                 }

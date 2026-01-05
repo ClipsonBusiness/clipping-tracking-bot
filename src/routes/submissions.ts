@@ -110,12 +110,28 @@ router.post('/youtube', async (req: Request, res: Response) => {
     });
 
     if (!verifiedAccount) {
-      // Option: Create REJECTED submission or return 403
-      // Based on user preference, I'll return 403 without creating
+      // Get user's verified YouTube accounts to show what they have
+      const userYouTubeAccounts = await getPrismaClient().socialAccount.findMany({
+        where: {
+          userId,
+          platform: 'YOUTUBE',
+          status: 'VERIFIED',
+        },
+        select: {
+          handle: true,
+          platformUserId: true,
+        },
+      });
+      
       return res.status(403).json({ 
         error: 'AUTHOR_MISMATCH',
         message: 'You do not have a verified YouTube account matching the video author. Please verify your YouTube account first.',
         authorChannelId,
+        yourVerifiedAccounts: userYouTubeAccounts.map(acc => ({
+          handle: acc.handle,
+          platformUserId: acc.platformUserId,
+        })),
+        help: 'Go to Social Account Management to verify the YouTube account that owns this video.',
       });
     }
 
