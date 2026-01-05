@@ -80,20 +80,83 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
-    const { name, description } = req.body;
+    const {
+      companyName,
+      name,
+      identifier,
+      managerCode,
+      status = 'ACTIVE',
+      campaignType = 'PUBLIC',
+      shortDescription,
+      description,
+      allowedUserTypes,
+      acceptedPlatforms,
+      discordServerId,
+      discordRoleId,
+      discordInviteLink,
+      startDate,
+      endDate,
+      contentGuidelines,
+      campaignRules,
+      requiredHashtags,
+      bannedHashtags,
+      maxContentAgeHours,
+      targetSubmissions,
+      payoutPerLink,
+      totalBudget,
+      payoutType,
+      minViewsForPayout,
+      minViewsPerClip,
+      maxPayoutPerCreator,
+      dailyBudgetLimit,
+    } = req.body;
 
-    if (!name) {
-      return res.status(400).json({ error: 'Campaign name is required' });
+    if (!name || !companyName || !shortDescription || !description) {
+      return res.status(400).json({ 
+        error: 'Missing required fields',
+        required: ['companyName', 'name', 'shortDescription', 'description']
+      });
     }
 
     const prisma = getPrismaClient();
 
+    // Build campaign data object with all available fields
+    const campaignData: any = {
+      name,
+      description: description || null,
+      status: status || 'ACTIVE',
+    };
+
+    // Add optional fields if they exist in schema (will be added after migration)
+    // For now, store JSON fields as strings
+    if (companyName) campaignData.companyName = companyName;
+    if (identifier) campaignData.identifier = identifier;
+    if (managerCode) campaignData.managerCode = managerCode;
+    if (campaignType) campaignData.campaignType = campaignType;
+    if (shortDescription) campaignData.shortDescription = shortDescription;
+    if (allowedUserTypes) campaignData.allowedUserTypes = typeof allowedUserTypes === 'string' ? allowedUserTypes : JSON.stringify(allowedUserTypes);
+    if (acceptedPlatforms) campaignData.acceptedPlatforms = typeof acceptedPlatforms === 'string' ? acceptedPlatforms : JSON.stringify(acceptedPlatforms);
+    if (discordServerId) campaignData.discordServerId = discordServerId;
+    if (discordRoleId) campaignData.discordRoleId = discordRoleId;
+    if (discordInviteLink) campaignData.discordInviteLink = discordInviteLink;
+    if (startDate) campaignData.startDate = new Date(startDate);
+    if (endDate) campaignData.endDate = new Date(endDate);
+    if (contentGuidelines) campaignData.contentGuidelines = contentGuidelines;
+    if (campaignRules) campaignData.campaignRules = campaignRules;
+    if (requiredHashtags) campaignData.requiredHashtags = requiredHashtags;
+    if (bannedHashtags) campaignData.bannedHashtags = bannedHashtags;
+    if (maxContentAgeHours !== undefined) campaignData.maxContentAgeHours = maxContentAgeHours;
+    if (targetSubmissions !== undefined) campaignData.targetSubmissions = targetSubmissions;
+    if (payoutPerLink !== undefined) campaignData.payoutPerLink = payoutPerLink;
+    if (totalBudget !== undefined) campaignData.totalBudget = totalBudget;
+    if (payoutType) campaignData.payoutType = payoutType;
+    if (minViewsForPayout !== undefined) campaignData.minViewsForPayout = minViewsForPayout;
+    if (minViewsPerClip !== undefined) campaignData.minViewsPerClip = minViewsPerClip;
+    if (maxPayoutPerCreator !== undefined) campaignData.maxPayoutPerCreator = maxPayoutPerCreator;
+    if (dailyBudgetLimit !== undefined) campaignData.dailyBudgetLimit = dailyBudgetLimit;
+
     const campaign = await prisma.campaign.create({
-      data: {
-        name,
-        description: description || null,
-        status: 'ACTIVE',
-      },
+      data: campaignData,
     });
 
     res.status(201).json({ campaign });

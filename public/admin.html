@@ -171,11 +171,13 @@
         }
         .create-campaign-form {
             background: #f9fafb;
-            padding: 25px;
+            padding: 30px;
             border-radius: 8px;
             margin-bottom: 30px;
             border: 2px solid #e5e7eb;
             animation: slideDown 0.3s ease-out;
+            max-height: 80vh;
+            overflow-y: auto;
         }
         @keyframes slideDown {
             from {
@@ -187,6 +189,22 @@
                 transform: translateY(0);
             }
         }
+        .form-section {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .form-section:last-child {
+            border-bottom: none;
+        }
+        .form-section h4 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
         .form-group {
             margin-bottom: 15px;
         }
@@ -195,17 +213,63 @@
             margin-bottom: 5px;
             font-weight: 600;
             color: #333;
+            font-size: 0.9em;
+        }
+        .form-group .help-text {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 4px;
+            font-style: italic;
         }
         .form-group input,
-        .form-group textarea {
+        .form-group textarea,
+        .form-group select {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 6px;
             font-size: 1em;
+            font-family: inherit;
         }
         .form-group textarea {
             min-height: 80px;
+            resize: vertical;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .checkbox-item input[type="checkbox"] {
+            width: auto;
+        }
+        .file-upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .file-upload-area:hover {
+            border-color: #667eea;
+            background: #f0f9ff;
+        }
+        .file-upload-area.has-file {
+            border-color: #10b981;
+            background: #f0fdf4;
         }
     </style>
 </head>
@@ -229,17 +293,286 @@
             </div>
 
             <div class="create-campaign-form" id="create-campaign-form" style="display: none;">
-                <h3 style="margin-bottom: 15px;">Create New Campaign</h3>
-                <div class="form-group">
-                    <label>Campaign Name *</label>
-                    <input type="text" id="campaign-name" placeholder="e.g., Summer 2024 Campaign" required>
+                <h3 style="margin-bottom: 20px; color: #333;">Create New Campaign</h3>
+                
+                <!-- Basic Information -->
+                <div class="form-section">
+                    <h4>📋 Basic Information</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Company Name *</label>
+                            <input type="text" id="campaign-company" placeholder="e.g., Nike, Apple, etc." required>
+                        </div>
+                        <div class="form-group">
+                            <label>Campaign Name *</label>
+                            <input type="text" id="campaign-name" placeholder="e.g., Summer 2024 Collection" required>
+                            <div class="help-text">A specific name for this campaign. Use this to distinguish between multiple campaigns for the same brand.</div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Campaign Identifier (Optional)</label>
+                            <input type="text" id="campaign-identifier" placeholder="e.g., summer24, q4-promo">
+                            <div class="help-text">Used for URL suffixes. Leave empty for auto-generation.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Manager Code</label>
+                            <input type="text" id="campaign-manager" placeholder="e.g., tomasjun" value="tomasjun">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Campaign URL Preview</label>
+                        <input type="text" id="campaign-url-preview" readonly style="background: #f3f4f6;">
+                        <div class="help-text">URL format: https://app.clipson.io/[manager]-[companyname]</div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Description (optional)</label>
-                    <textarea id="campaign-description" placeholder="Describe what this campaign is about..."></textarea>
+
+                <!-- Status & Type -->
+                <div class="form-section">
+                    <h4>⚙️ Status & Type</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Status *</label>
+                            <select id="campaign-status" required>
+                                <option value="ACTIVE">Active (accepting submissions)</option>
+                                <option value="PAUSED">Paused (visible but closed)</option>
+                                <option value="DRAFT">Draft (hidden)</option>
+                                <option value="COMPLETED">Completed (campaign ended)</option>
+                            </select>
+                            <div class="help-text">Active = accepting submissions • Paused = visible but closed • Draft = hidden • Completed = campaign ended</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Campaign Type *</label>
+                            <select id="campaign-type" required>
+                                <option value="PUBLIC">Public - Open to all</option>
+                                <option value="PRIVATE">Private - Invite only</option>
+                            </select>
+                            <div class="help-text">Public = appears in campaign listings for all users • Private = only accessible via direct link or invitation</div>
+                        </div>
+                    </div>
                 </div>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-primary" onclick="createCampaign()">Create Campaign</button>
+
+                <!-- Campaign Logo/Banner -->
+                <div class="form-section">
+                    <h4>🖼️ Campaign Logo / Banner</h4>
+                    <div class="form-group">
+                        <label>Upload Logo/Banner</label>
+                        <div class="file-upload-area" id="logo-upload-area" onclick="document.getElementById('logo-file').click()">
+                            <div style="font-size: 2em; margin-bottom: 10px;">☁️</div>
+                            <div>Drag & drop your logo here or browse</div>
+                            <div style="font-size: 0.85em; color: #666; margin-top: 5px;">PNG, JPG, GIF or WebP (Max 5MB, Recommended: 400x100px)</div>
+                        </div>
+                        <input type="file" id="logo-file" accept="image/*" style="display: none;" onchange="handleLogoUpload(event)">
+                        <div class="help-text">This logo will appear on campaign cards and the submission page</div>
+                    </div>
+                </div>
+
+                <!-- Descriptions -->
+                <div class="form-section">
+                    <h4>📝 Descriptions</h4>
+                    <div class="form-group">
+                        <label>Short Description *</label>
+                        <input type="text" id="campaign-short-desc" placeholder="Brief one-line description of your campaign" maxlength="100" required>
+                        <div class="help-text">A brief tagline shown on campaign cards and listings. Keep it under 100 characters for best display.</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Full Description *</label>
+                        <textarea id="campaign-description" placeholder="Detailed description of your campaign goals and what you're looking for..." required></textarea>
+                        <div class="help-text">Detailed campaign information shown on the submission page. Include goals, expectations, and any special instructions.</div>
+                    </div>
+                </div>
+
+                <!-- Target Audience -->
+                <div class="form-section">
+                    <h4>👥 Target Audience</h4>
+                    <div class="form-group">
+                        <label>Allowed User Types *</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="user-creators" value="CREATORS">
+                                <label for="user-creators" style="font-weight: normal;">Creators (Original content)</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="user-clippers" value="CLIPPERS" checked>
+                                <label for="user-clippers" style="font-weight: normal;">Clippers (Repost/remix)</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="user-ugc" value="UGC" checked>
+                                <label for="user-ugc" style="font-weight: normal;">UGC Creators</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="user-self" value="SELF_MANAGED">
+                                <label for="user-self" style="font-weight: normal;">Self-Managed (I will upload content)</label>
+                            </div>
+                        </div>
+                        <div class="help-text">Selecting "Clippers" or "UGC Creators" will show additional payout options</div>
+                    </div>
+                </div>
+
+                <!-- Platform Requirements -->
+                <div class="form-section">
+                    <h4>📱 Platform Requirements</h4>
+                    <div class="form-group">
+                        <label>Accepted Platforms *</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="platform-instagram" value="INSTAGRAM" checked>
+                                <label for="platform-instagram" style="font-weight: normal;">Instagram</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="platform-tiktok" value="TIKTOK" checked>
+                                <label for="platform-tiktok" style="font-weight: normal;">TikTok</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="platform-youtube" value="YOUTUBE" checked>
+                                <label for="platform-youtube" style="font-weight: normal;">YouTube</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="platform-twitter" value="TWITTER">
+                                <label for="platform-twitter" style="font-weight: normal;">Twitter</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="platform-twitch" value="TWITCH">
+                                <label for="platform-twitch" style="font-weight: normal;">Twitch</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="platform-kick" value="KICK">
+                                <label for="platform-kick" style="font-weight: normal;">Kick</label>
+                            </div>
+                        </div>
+                        <div class="help-text">Only selected platforms will be accepted</div>
+                    </div>
+                </div>
+
+                <!-- Discord Integration -->
+                <div class="form-section">
+                    <h4>💬 Discord Integration</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Discord Server ID (Guild ID)</label>
+                            <input type="text" id="discord-server-id" placeholder="e.g., 123456789012345678">
+                        </div>
+                        <div class="form-group">
+                            <label>Required Role ID</label>
+                            <input type="text" id="discord-role-id" placeholder="e.g., 987654321098765432">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Discord Invite Link</label>
+                        <input type="url" id="discord-invite" placeholder="https://discord.gg/yourserver">
+                        <div class="help-text">Only one active campaign is allowed per Discord server. Linking a server enables Sorabot commands.</div>
+                    </div>
+                </div>
+
+                <!-- Timeline -->
+                <div class="form-section">
+                    <h4>📅 Timeline</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Start Date *</label>
+                            <input type="date" id="campaign-start-date" required>
+                            <div class="help-text">Campaign becomes visible and accepting submissions on this date.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>End Date</label>
+                            <input type="date" id="campaign-end-date">
+                            <div class="help-text">Campaign stops accepting new submissions after this date. Leave empty for ongoing campaigns.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Requirements -->
+                <div class="form-section">
+                    <h4>📋 Content Requirements</h4>
+                    <div class="form-group">
+                        <label>Content Guidelines</label>
+                        <textarea id="content-guidelines" placeholder="What kind of content are you looking for? Style, tone, requirements..."></textarea>
+                        <div class="help-text">Describe the creative direction, style, and tone you want. Helps creators understand your brand vision.</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Campaign Rules</label>
+                        <textarea id="campaign-rules" placeholder="- Must show product in use for at least 5 seconds&#10;- Must mention our brand name verbally&#10;- No competitor products in frame&#10;- Must be original content (no reposts)"></textarea>
+                        <div class="help-text">Specific requirements and restrictions. Submissions not following rules may be rejected.</div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Required Hashtags</label>
+                            <input type="text" id="required-hashtags" placeholder="#sponsored, #brandname" value="#sponsored, #brandname">
+                            <div class="help-text">Hashtags that MUST appear in submissions. Separate with commas. Include the # symbol.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Banned Hashtags</label>
+                            <input type="text" id="banned-hashtags" placeholder="#competitor, #avoid" value="#competitor, #avoid">
+                            <div class="help-text">Submissions containing these hashtags will be flagged or auto-rejected.</div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Max Content Age (hours)</label>
+                            <input type="number" id="max-content-age" placeholder="72" value="72" min="0">
+                            <div class="help-text">Only accept content posted within this many hours. Use 0 or leave empty to accept any age.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Target Submissions</label>
+                            <input type="number" id="target-submissions" placeholder="100" value="100" min="1">
+                            <div class="help-text">Goal number of submissions for this campaign. Used for progress tracking and reporting.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment & Budget -->
+                <div class="form-section">
+                    <h4>💰 Payment & Budget</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Payout Per Link</label>
+                            <input type="number" id="payout-per-link" placeholder="50.00" step="0.01" min="0">
+                            <div class="help-text">Fixed amount paid for each approved submission. Used for flat-rate campaigns (not view-based).</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Total Budget</label>
+                            <input type="number" id="total-budget" placeholder="10000.00" step="0.01" min="0" value="10000.00">
+                            <div class="help-text">Maximum total spend for this campaign. Campaign auto-pauses when budget is exhausted.</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Payout Type</label>
+                        <select id="payout-type">
+                            <option value="FLAT_RATE">Flat Rate - Fixed amount per submission</option>
+                            <option value="CPM">CPM - Pay scales with views</option>
+                            <option value="HYBRID">Hybrid - Guaranteed base + view bonus</option>
+                        </select>
+                        <div class="help-text">Flat Rate = same pay per post • CPM = pay scales with views • Hybrid = guaranteed base + view bonus</div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Min Views for Payout</label>
+                            <input type="number" id="min-views-payout" placeholder="10000" value="10000" min="0">
+                            <div class="help-text">Creator must reach this total view count across ALL submissions before qualifying for any payout.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Min Views Per Clip</label>
+                            <input type="number" id="min-views-clip" placeholder="1000" value="1000" min="0">
+                            <div class="help-text">Individual clips below this threshold pay $0. Helps filter low-performing content.</div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Max Payout Per Creator</label>
+                            <input type="number" id="max-payout-creator" placeholder="500.00" step="0.01" min="0" value="500.00">
+                            <div class="help-text">Limit total earnings per creator to distribute budget fairly. Leave empty for no limit.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Daily Budget Limit</label>
+                            <input type="number" id="daily-budget-limit" placeholder="1000.00" step="0.01" min="0" value="1000.00">
+                            <div class="help-text">Maximum amount that can be paid out per day. Helps pace campaign spending.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div style="display: flex; gap: 10px; margin-top: 20px; padding-top: 20px; border-top: 2px solid #e5e7eb;">
+                    <button class="btn btn-primary" onclick="createCampaign()" style="flex: 1;">Create Campaign</button>
                     <button class="btn" onclick="toggleCreateForm()" style="background: #e5e7eb; color: #333;">Cancel</button>
                 </div>
             </div>
@@ -365,16 +698,140 @@
                 `).join('') + '</div>';
         }
 
+        function handleLogoUpload(event) {
+            const file = event.target.files[0];
+            const uploadArea = document.getElementById('logo-upload-area');
+            if (file) {
+                uploadArea.classList.add('has-file');
+                uploadArea.innerHTML = `
+                    <div style="font-size: 2em; margin-bottom: 10px;">✅</div>
+                    <div>${file.name}</div>
+                    <div style="font-size: 0.85em; color: #666; margin-top: 5px;">Click to change</div>
+                `;
+                // Store file for later upload (would need file upload endpoint)
+            }
+        }
+
+        function updateUrlPreview() {
+            const manager = document.getElementById('campaign-manager').value.trim() || 'manager';
+            const company = document.getElementById('campaign-company').value.trim().toLowerCase().replace(/\s+/g, '') || 'company';
+            const preview = document.getElementById('campaign-url-preview');
+            preview.value = `https://app.clipson.io/${manager}-${company}`;
+        }
+
+        // Update URL preview when company or manager changes
+        document.addEventListener('DOMContentLoaded', () => {
+            const companyInput = document.getElementById('campaign-company');
+            const managerInput = document.getElementById('campaign-manager');
+            if (companyInput) companyInput.addEventListener('input', updateUrlPreview);
+            if (managerInput) managerInput.addEventListener('input', updateUrlPreview);
+        });
+
         async function createCampaign() {
+            // Basic Information
+            const companyName = document.getElementById('campaign-company').value.trim();
             const name = document.getElementById('campaign-name').value.trim();
+            const identifier = document.getElementById('campaign-identifier').value.trim();
+            const managerCode = document.getElementById('campaign-manager').value.trim();
+            
+            // Status & Type
+            const status = document.getElementById('campaign-status').value;
+            const campaignType = document.getElementById('campaign-type').value;
+            
+            // Descriptions
+            const shortDescription = document.getElementById('campaign-short-desc').value.trim();
             const description = document.getElementById('campaign-description').value.trim();
             
-            if (!name) {
-                alert('Please enter a campaign name');
+            // Target Audience
+            const allowedUserTypes = [];
+            if (document.getElementById('user-creators').checked) allowedUserTypes.push('CREATORS');
+            if (document.getElementById('user-clippers').checked) allowedUserTypes.push('CLIPPERS');
+            if (document.getElementById('user-ugc').checked) allowedUserTypes.push('UGC');
+            if (document.getElementById('user-self').checked) allowedUserTypes.push('SELF_MANAGED');
+            
+            // Platform Requirements
+            const acceptedPlatforms = [];
+            if (document.getElementById('platform-instagram').checked) acceptedPlatforms.push('INSTAGRAM');
+            if (document.getElementById('platform-tiktok').checked) acceptedPlatforms.push('TIKTOK');
+            if (document.getElementById('platform-youtube').checked) acceptedPlatforms.push('YOUTUBE');
+            if (document.getElementById('platform-twitter').checked) acceptedPlatforms.push('TWITTER');
+            if (document.getElementById('platform-twitch').checked) acceptedPlatforms.push('TWITCH');
+            if (document.getElementById('platform-kick').checked) acceptedPlatforms.push('KICK');
+            
+            // Discord
+            const discordServerId = document.getElementById('discord-server-id').value.trim();
+            const discordRoleId = document.getElementById('discord-role-id').value.trim();
+            const discordInviteLink = document.getElementById('discord-invite').value.trim();
+            
+            // Timeline
+            const startDate = document.getElementById('campaign-start-date').value;
+            const endDate = document.getElementById('campaign-end-date').value;
+            
+            // Content Requirements
+            const contentGuidelines = document.getElementById('content-guidelines').value.trim();
+            const campaignRules = document.getElementById('campaign-rules').value.trim();
+            const requiredHashtags = document.getElementById('required-hashtags').value.trim();
+            const bannedHashtags = document.getElementById('banned-hashtags').value.trim();
+            const maxContentAgeHours = parseInt(document.getElementById('max-content-age').value) || null;
+            const targetSubmissions = parseInt(document.getElementById('target-submissions').value) || null;
+            
+            // Payment & Budget
+            const payoutPerLink = parseFloat(document.getElementById('payout-per-link').value) || null;
+            const totalBudget = parseFloat(document.getElementById('total-budget').value) || null;
+            const payoutType = document.getElementById('payout-type').value;
+            const minViewsForPayout = parseInt(document.getElementById('min-views-payout').value) || null;
+            const minViewsPerClip = parseInt(document.getElementById('min-views-clip').value) || null;
+            const maxPayoutPerCreator = parseFloat(document.getElementById('max-payout-creator').value) || null;
+            const dailyBudgetLimit = parseFloat(document.getElementById('daily-budget-limit').value) || null;
+            
+            // Validation
+            if (!companyName || !name || !shortDescription || !description) {
+                alert('Please fill in all required fields (Company Name, Campaign Name, Short Description, Full Description)');
+                return;
+            }
+            
+            if (allowedUserTypes.length === 0) {
+                alert('Please select at least one allowed user type');
+                return;
+            }
+            
+            if (acceptedPlatforms.length === 0) {
+                alert('Please select at least one accepted platform');
                 return;
             }
 
             try {
+                const campaignData = {
+                    companyName,
+                    name,
+                    identifier: identifier || null,
+                    managerCode: managerCode || null,
+                    status,
+                    campaignType,
+                    shortDescription,
+                    description,
+                    allowedUserTypes: JSON.stringify(allowedUserTypes),
+                    acceptedPlatforms: JSON.stringify(acceptedPlatforms),
+                    discordServerId: discordServerId || null,
+                    discordRoleId: discordRoleId || null,
+                    discordInviteLink: discordInviteLink || null,
+                    startDate: startDate || null,
+                    endDate: endDate || null,
+                    contentGuidelines: contentGuidelines || null,
+                    campaignRules: campaignRules || null,
+                    requiredHashtags: requiredHashtags || null,
+                    bannedHashtags: bannedHashtags || null,
+                    maxContentAgeHours,
+                    targetSubmissions,
+                    payoutPerLink,
+                    totalBudget,
+                    payoutType: payoutType || null,
+                    minViewsForPayout,
+                    minViewsPerClip,
+                    maxPayoutPerCreator,
+                    dailyBudgetLimit
+                };
+
                 const response = await fetch(`${API_BASE}/api/campaigns`, {
                     method: 'POST',
                     headers: {
@@ -382,14 +839,16 @@
                         'x-user-id': 'admin-123',
                         'x-user-role': 'ADMIN'
                     },
-                    body: JSON.stringify({ name, description: description || null })
+                    body: JSON.stringify(campaignData)
                 });
                 
                 const data = await response.json();
                 
                 if (response.ok) {
-                    document.getElementById('campaign-name').value = '';
-                    document.getElementById('campaign-description').value = '';
+                    // Clear form
+                    document.getElementById('create-campaign-form').querySelectorAll('input, textarea, select').forEach(el => {
+                        if (el.type !== 'file') el.value = '';
+                    });
                     toggleCreateForm(); // Hide the form
                     await loadCampaigns();
                     alert('Campaign created successfully!');

@@ -23,15 +23,56 @@ model User {
 
 model Campaign {
   id            String          @id @default(cuid())
+  // Basic Information
+  companyName   String?
   name          String
-  description   String?
-  status        String          @default("ACTIVE") // ACTIVE | INACTIVE | COMPLETED
+  identifier    String?         // URL suffix identifier
+  managerCode   String?
+  campaignUrl   String?
+  // Status & Type
+  status        String          @default("ACTIVE") // ACTIVE | PAUSED | DRAFT | COMPLETED
+  campaignType  String          @default("PUBLIC") // PUBLIC | PRIVATE
+  // Descriptions
+  shortDescription String?
+  description   String?         // Full description
+  // Media
+  logoUrl       String?
+  bannerUrl     String?
+  // Target Audience
+  allowedUserTypes String?      // JSON array: ["CREATORS", "CLIPPERS", "UGC", "SELF_MANAGED"]
+  // Platform Requirements
+  acceptedPlatforms String?     // JSON array: ["INSTAGRAM", "TIKTOK", "YOUTUBE", "TWITTER", "TWITCH", "KICK"]
+  // Discord Integration
+  discordServerId String?
+  discordRoleId   String?
+  discordInviteLink String?
+  // Timeline
+  startDate     DateTime?
+  endDate       DateTime?
+  // Content Requirements
+  contentGuidelines String?
+  campaignRules     String?
+  requiredHashtags  String?
+  bannedHashtags    String?
+  maxContentAgeHours Int?       // Max age in hours
+  targetSubmissions  Int?
+  // Payment & Budget
+  payoutPerLink     Float?      // Fixed amount per submission
+  totalBudget       Float?
+  payoutType        String?     // FLAT_RATE | CPM | HYBRID
+  minViewsForPayout Int?
+  minViewsPerClip   Int?
+  maxPayoutPerCreator Float?
+  dailyBudgetLimit  Float?
+  // Metadata
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   members       CampaignMember[]
   submissions   Submission[]
   
   @@index([status])
+  @@index([campaignType])
+  @@unique([identifier])
 }
 
 model CampaignMember {
