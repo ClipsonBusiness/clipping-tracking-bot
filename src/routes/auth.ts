@@ -86,19 +86,17 @@ router.post('/register', async (req: Request, res: Response) => {
       return res.status(409).json({ error: 'User with this email already exists' });
     }
 
-    // Check username uniqueness if provided (skip if column doesn't exist)
-    // We'll detect if username column exists by trying a simple query first
+    // Check username uniqueness if provided (skip entirely if column doesn't exist)
+    // We'll try to check, but if column doesn't exist, we'll skip all username operations
     let usernameColumnExists = false;
     if (trimmedUsername && trimmedUsername.length > 0) {
       try {
-        // Try to query username to see if column exists
-        await prisma.user.findFirst({
-          where: { username: trimmedUsername },
-          select: { id: true },
-        });
+        // Try a simple query to see if username column exists
+        // Use a query that won't match anything, just to test if column exists
+        await prisma.$queryRaw`SELECT username FROM "User" LIMIT 0`;
         usernameColumnExists = true;
         
-        // If we got here, column exists, so check uniqueness
+        // If column exists, check uniqueness
         const existingUsername = await prisma.user.findFirst({
           where: { username: trimmedUsername },
         });
@@ -107,11 +105,11 @@ router.post('/register', async (req: Request, res: Response) => {
           return res.status(409).json({ error: 'Username already taken' });
         }
       } catch (usernameCheckError: any) {
-        // If username column doesn't exist, skip uniqueness check
-        if (usernameCheckError.message?.includes('username') && 
-            (usernameCheckError.message?.includes('does not exist') || 
-             usernameCheckError.message?.includes('Unknown column'))) {
-          console.warn('Username column does not exist, skipping username validation');
+        // If username column doesn't exist, skip all username operations
+        if (usernameCheckError.message?.includes('username') || 
+            usernameCheckError.message?.includes('column') ||
+            usernameCheckError.message?.includes('does not exist')) {
+          console.warn('Username column does not exist in database, skipping username operations');
           usernameColumnExists = false;
           // Continue without username - we'll create user without it
         } else {
