@@ -322,8 +322,8 @@ router.post('/login', async (req: Request, res: Response) => {
     const prisma = getPrismaClient();
 
     // Check which columns exist in the User table
-    let usernameColumnExists = false;
-    let passwordColumnExists = false;
+    let usernameColumnExists: boolean = false;
+    let passwordColumnExists: boolean = false;
     try {
       const columns = await prisma.$queryRaw<Array<{column_name: string}>>`
         SELECT column_name 
