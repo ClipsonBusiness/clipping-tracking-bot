@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
 import { createQueue } from './jobs/queue';
 import { getPrismaClient } from './utils/prisma';
 
@@ -19,8 +20,13 @@ const PORT = parseInt(process.env.PORT || '3001', 10);
 app.use(cors());
 app.use(express.json());
 
-// Serve static files from public directory
-app.use(express.static('public'));
+// Serve static files from public directory (use absolute path for reliability)
+app.use(express.static(path.join(process.cwd(), 'public')));
+
+// Root route - serve index.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(process.cwd(), 'public', 'index.html'));
+});
 
 // Initialize BullMQ queue (optional - won't crash if Redis unavailable)
 let queue: any = null;
@@ -58,15 +64,6 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Serve frontend pages at clean URLs
-app.get('/admin', (req, res) => {
-  res.sendFile('admin.html', { root: 'public' });
-});
-
-app.get('/clipper', (req, res) => {
-  res.sendFile('clipper.html', { root: 'public' });
-});
-
 // Import routes
 import apiRoutes from './routes';
 import adminRoutes from './routes/admin';
@@ -75,7 +72,7 @@ import { adminMiddleware } from './middleware/admin';
 // Use routes
 app.use('/api', apiRoutes);
 
-// Admin API routes (protected by admin middleware)
+// Admin routes (protected by admin middleware)
 app.use('/admin', adminMiddleware, adminRoutes);
 
 // Error handling middleware

@@ -32,9 +32,9 @@ RUN npm run build
 # Expose port (Railway will set PORT env var)
 EXPOSE ${PORT:-3001}
 
-# Health check
+# Health check (uses PORT env var, defaults to 3001)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+  CMD node -e "const port = process.env.PORT || 3001; require('http').get(`http://localhost:${port}/health`, (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Run migrations and start server
 # Use db push first (simpler, more reliable for initial setup)
