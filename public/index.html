@@ -1327,76 +1327,116 @@
                 } else if (response.status === 403) {
                     if (data.error === 'AUTHOR_MISMATCH') {
                         // Create a more user-friendly error display with actionable buttons
-                        const errorHtml = `
-                            <div style="padding: 20px; background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; margin-top: 15px;">
-                                <div style="font-size: 1.2em; font-weight: bold; color: #92400e; margin-bottom: 15px;">
-                                    ⚠️ Author Mismatch Error
+                        const errorDiv = document.createElement('div');
+                        errorDiv.style.cssText = 'padding: 20px; background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; margin-top: 15px;';
+                        
+                        let verifiedAccountsHtml = '';
+                        if (data.yourVerifiedAccounts && data.yourVerifiedAccounts.length > 0) {
+                            verifiedAccountsHtml = `
+                                <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
+                                    <strong>✅ Your verified ${detectedPlatform} accounts:</strong><br>
+                                    ${data.yourVerifiedAccounts.map((acc: any) => `• @${acc.handle} (ID: ${acc.platformUserId})`).join('<br>')}<br>
+                                    <span style="color: #dc2626;">None of these match the video author.</span>
                                 </div>
-                                <div style="color: #78350f; margin-bottom: 15px; line-height: 1.6;">
-                                    The video/post you're trying to submit is not from your verified ${detectedPlatform} account.
+                            `;
+                        } else {
+                            verifiedAccountsHtml = `
+                                <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 15px; color: #dc2626;">
+                                    ❌ You don't have any verified ${detectedPlatform} accounts yet.
                                 </div>
-                                ${data.yourVerifiedAccounts && data.yourVerifiedAccounts.length > 0 ? `
-                                    <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
-                                        <strong>✅ Your verified ${detectedPlatform} accounts:</strong><br>
-                                        ${data.yourVerifiedAccounts.map((acc: any) => `• @${acc.handle} (ID: ${acc.platformUserId})`).join('<br>')}<br>
-                                        <span style="color: #dc2626;">None of these match the video author.</span>
-                                    </div>
-                                ` : `
-                                    <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 15px; color: #dc2626;">
-                                        ❌ You don't have any verified ${detectedPlatform} accounts yet.
-                                    </div>
-                                `}
-                                ${data.authorChannelId || data.authorUserId ? `
-                                    <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-family: monospace; font-size: 0.9em;">
-                                        <strong>🔍 Video Author ID needed:</strong><br>
-                                        ${data.authorChannelId || data.authorUserId}
-                                    </div>
-                                ` : ''}
-                                <div style="background: #dbeafe; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
-                                    <strong style="color: #1e40af;">📋 Quick Fix:</strong><br>
-                                    <ol style="margin: 10px 0; padding-left: 20px; color: #1e3a8a;">
-                                        <li>Scroll up to "Social Account Management"</li>
-                                        <li>Select "${detectedPlatform}" and enter the handle that owns this video</li>
-                                        <li>Click "Verify Account" and add the code to your ${detectedPlatform === 'YouTube' ? 'channel description' : 'bio'}</li>
-                                        <li>Click "Check Account" to verify</li>
-                                        <li>Try submitting again</li>
-                                    </ol>
-                                </div>
-                                <button onclick="
-                                    document.getElementById('social-platform').value = '${detectedPlatform.toLowerCase()}';
-                                    document.getElementById('social-account-response').scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                    setTimeout(() => document.getElementById('social-handle').focus(), 300);
-                                " style="
-                                    background: #667eea;
-                                    color: white;
-                                    border: none;
-                                    padding: 12px 24px;
-                                    border-radius: 6px;
-                                    font-size: 1em;
-                                    font-weight: 600;
-                                    cursor: pointer;
-                                    margin-right: 10px;
-                                ">
-                                    🔗 Go to Verification
-                                </button>
-                                <button onclick="
-                                    document.getElementById('social-account-response').scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                " style="
-                                    background: #6b7280;
-                                    color: white;
-                                    border: none;
-                                    padding: 12px 24px;
-                                    border-radius: 6px;
-                                    font-size: 1em;
-                                    font-weight: 600;
-                                    cursor: pointer;
-                                ">
-                                    📋 Show My Accounts
-                                </button>
+                            `;
+                        }
+                        
+                        const authorIdHtml = (data.authorChannelId || data.authorUserId) ? `
+                            <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-family: monospace; font-size: 0.9em;">
+                                <strong>🔍 Video Author ID needed:</strong><br>
+                                ${data.authorChannelId || data.authorUserId}
                             </div>
+                        ` : '';
+                        
+                        errorDiv.innerHTML = `
+                            <div style="font-size: 1.2em; font-weight: bold; color: #92400e; margin-bottom: 15px;">
+                                ⚠️ Author Mismatch Error
+                            </div>
+                            <div style="color: #78350f; margin-bottom: 15px; line-height: 1.6;">
+                                The video/post you're trying to submit is not from your verified ${detectedPlatform} account.
+                            </div>
+                            ${verifiedAccountsHtml}
+                            ${authorIdHtml}
+                            <div style="background: #dbeafe; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                                <strong style="color: #1e40af;">📋 Quick Fix:</strong><br>
+                                <ol style="margin: 10px 0; padding-left: 20px; color: #1e3a8a;">
+                                    <li>Scroll up to "Social Account Management"</li>
+                                    <li>Select "${detectedPlatform}" and enter the handle that owns this video</li>
+                                    <li>Click "Verify Account" and add the code to your ${detectedPlatform === 'YouTube' ? 'channel description' : 'bio'}</li>
+                                    <li>Click "Check Account" to verify</li>
+                                    <li>Try submitting again</li>
+                                </ol>
+                            </div>
+                            <button id="goto-verification-btn" style="
+                                background: #667eea;
+                                color: white;
+                                border: none;
+                                padding: 12px 24px;
+                                border-radius: 6px;
+                                font-size: 1em;
+                                font-weight: 600;
+                                cursor: pointer;
+                                margin-right: 10px;
+                            ">
+                                🔗 Go to Verification
+                            </button>
+                            <button id="show-accounts-btn" style="
+                                background: #6b7280;
+                                color: white;
+                                border: none;
+                                padding: 12px 24px;
+                                border-radius: 6px;
+                                font-size: 1em;
+                                font-weight: 600;
+                                cursor: pointer;
+                            ">
+                                📋 Show My Accounts
+                            </button>
                         `;
-                        responseEl.innerHTML = errorHtml;
+                        
+                        // Clear responseEl and add the error div
+                        responseEl.innerHTML = '';
+                        responseEl.appendChild(errorDiv);
                         responseEl.className = 'response show error';
+                        
+                        // Add event listeners to buttons
+                        const gotoBtn = document.getElementById('goto-verification-btn');
+                        const showBtn = document.getElementById('show-accounts-btn');
+                        
+                        if (gotoBtn) {
+                            gotoBtn.addEventListener('click', function() {
+                                const platformSelect = document.getElementById('social-platform');
+                                const handleInput = document.getElementById('social-handle');
+                                if (platformSelect) {
+                                    platformSelect.value = detectedPlatform.toLowerCase();
+                                }
+                                const socialSection = document.querySelector('.section h2')?.parentElement;
+                                if (socialSection) {
+                                    socialSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }
+                                setTimeout(() => {
+                                    if (handleInput) {
+                                        handleInput.focus();
+                                    }
+                                }, 300);
+                            });
+                        }
+                        
+                        if (showBtn) {
+                            showBtn.addEventListener('click', function() {
+                                loadMyAccounts();
+                                const socialSection = document.querySelector('.section h2')?.parentElement;
+                                if (socialSection) {
+                                    socialSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }
+                            });
+                        }
                     } else {
                         output += `\n\n⚠️ Author mismatch. Make sure the content is from your verified ${detectedPlatform} account.`;
                         responseEl.textContent = output;
