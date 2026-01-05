@@ -77,19 +77,24 @@ router.post('/register', async (req: Request, res: Response) => {
 
     const prisma = getPrismaClient();
 
-    // First, check if username column exists by trying a safe query
+    // Check which columns exist in the User table
     let usernameColumnExists = false;
+    let passwordColumnExists = false;
     try {
-      const result = await prisma.$queryRaw<Array<{column_name: string}>>`
+      const columns = await prisma.$queryRaw<Array<{column_name: string}>>`
         SELECT column_name 
         FROM information_schema.columns 
-        WHERE table_schema = 'public' AND table_name = 'User' AND column_name = 'username'
+        WHERE table_schema = 'public' AND table_name = 'User' 
+        AND column_name IN ('username', 'password')
       `;
-      usernameColumnExists = result.length > 0;
+      usernameColumnExists = columns.some(c => c.column_name === 'username');
+      passwordColumnExists = columns.some(c => c.column_name === 'password');
       console.log('Username column exists:', usernameColumnExists);
+      console.log('Password column exists:', passwordColumnExists);
     } catch (checkError: any) {
-      console.warn('Could not check username column, assuming it does not exist:', checkError.message);
+      console.warn('Could not check columns, assuming they do not exist:', checkError.message);
       usernameColumnExists = false;
+      passwordColumnExists = false;
     }
 
     // Check if user already exists by email
@@ -130,23 +135,46 @@ router.post('/register', async (req: Request, res: Response) => {
     // Create user - use raw SQL if username column doesn't exist to avoid Prisma issues
     let user: { id: string; email: string; role: string; username?: string | null; createdAt: Date } | null = null;
     
-    if (!usernameColumnExists) {
-      // Use raw SQL to create user without username column
+    if (!usernameColumnExists || !passwordColumnExists) {
+      // Use raw SQL to create user, only including columns that exist
       try {
-        // Generate a CUID-like ID or use gen_random_uuid
+        // Generate a CUID-like ID
         const userId = `cuid_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
         
-        await prisma.$executeRaw`
-          INSERT INTO "User" (id, email, password, role, "createdAt")
-          VALUES (${userId}, ${trimmedEmail}, ${hashedPassword}, ${validRole}, NOW())
-        `;
+        // Build INSERT query based on which columns exist
+        if (passwordColumnExists && usernameColumnExists && trimmedUsername) {
+          await prisma.$executeRaw`
+            INSERT INTO "User" (id, email, password, username, role, "createdAt")
+            VALUES (${userId}, ${trimmedEmail}, ${hashedPassword}, ${trimmedUsername}, ${validRole}, NOW())
+          `;
+        } else if (passwordColumnExists) {
+          await prisma.$executeRaw`
+            INSERT INTO "User" (id, email, password, role, "createdAt")
+            VALUES (${userId}, ${trimmedEmail}, ${hashedPassword}, ${validRole}, NOW())
+          `;
+        } else if (usernameColumnExists && trimmedUsername) {
+          await prisma.$executeRaw`
+            INSERT INTO "User" (id, email, username, role, "createdAt")
+            VALUES (${userId}, ${trimmedEmail}, ${trimmedUsername}, ${validRole}, NOW())
+          `;
+        } else {
+          // Neither password nor username columns exist
+          await prisma.$executeRaw`
+            INSERT INTO "User" (id, email, role, "createdAt")
+            VALUES (${userId}, ${trimmedEmail}, ${validRole}, NOW())
+          `;
+        }
         
-        // Fetch user using raw SQL
-        const fetchResult = await prisma.$queryRaw<Array<{id: string; email: string; role: string; createdAt: string}>>`
-          SELECT id, email, role, "createdAt"
-          FROM "User"
-          WHERE id = ${userId}
-        `;
+        // Fetch user using raw SQL - only select columns that exist
+        let selectColumns = 'id, email, role, "createdAt"';
+        if (usernameColumnExists) {
+          selectColumns += ', username';
+        }
+        
+        const fetchResult = await prisma.$queryRawUnsafe<Array<{id: string; email: string; role: string; username?: string | null; createdAt: string}>>(
+          `SELECT ${selectColumns} FROM "User" WHERE id = $1`,
+          userId
+        );
         
         if (fetchResult[0]) {
           user = {
@@ -154,7 +182,7 @@ router.post('/register', async (req: Request, res: Response) => {
             email: fetchResult[0].email,
             role: fetchResult[0].role,
             createdAt: new Date(fetchResult[0].createdAt),
-            username: null,
+            username: fetchResult[0].username || null,
           };
         } else {
           throw new Error('Failed to fetch created user');
@@ -314,21 +342,23 @@ router.post('/login', async (req: Request, res: Response) => {
           where: { email },
         });
       } else {
-        // Use raw SQL if username column doesn't exist
-        const result = await prisma.$queryRaw<Array<{id: string; email: string; role: string; password: string | null; createdAt: string}>>`
-          SELECT id, email, role, password, "createdAt"
-          FROM "User"
-          WHERE email = ${email}
-          LIMIT 1
-        `;
+        // Use raw SQL if columns don't exist - only select columns that exist
+        let selectCols = 'id, email, role, "createdAt"';
+        if (passwordColumnExists) selectCols += ', password';
+        if (usernameColumnExists) selectCols += ', username';
+        
+        const result = await prisma.$queryRawUnsafe<Array<{id: string; email: string; role: string; password?: string | null; username?: string | null; createdAt: string}>>(
+          `SELECT ${selectCols} FROM "User" WHERE email = $1 LIMIT 1`,
+          email
+        );
         if (result[0]) {
           user = {
             id: result[0].id,
             email: result[0].email,
             role: result[0].role,
-            password: result[0].password,
+            password: result[0].password || null,
             createdAt: new Date(result[0].createdAt),
-            username: null,
+            username: result[0].username || null,
           };
         }
       }
