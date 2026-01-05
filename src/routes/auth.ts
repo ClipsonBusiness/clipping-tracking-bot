@@ -33,10 +33,10 @@ setInterval(() => {
  */
 router.post('/register', async (req: Request, res: Response) => {
   try {
-    const { email, password, role = 'CLIPPER' } = req.body;
+    const { email, username, password, role = 'CLIPPER' } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+    if (!email || !username) {
+      return res.status(400).json({ error: 'Email and username are required' });
     }
 
     // Validate email format
@@ -45,10 +45,14 @@ router.post('/register', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Invalid email format' });
     }
 
-    // Validate password length
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    // Validate username (alphanumeric, underscore, hyphen, 3-20 chars)
+    const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
+    if (!usernameRegex.test(username)) {
+      return res.status(400).json({ error: 'Username must be 3-20 characters (letters, numbers, _, -)' });
     }
+
+    // Password is optional for testing
+    const hashedPassword = password ? hashPassword(password) : null;
 
     // Validate role
     if (role !== 'CLIPPER' && role !== 'ADMIN') {
@@ -57,26 +61,35 @@ router.post('/register', async (req: Request, res: Response) => {
 
     const prisma = getPrismaClient();
 
-    // Check if user already exists
-    const existing = await prisma.user.findUnique({
+    // Check if user already exists by email or username
+    const existingEmail = await prisma.user.findUnique({
       where: { email },
     });
 
-    if (existing) {
+    if (existingEmail) {
       return res.status(409).json({ error: 'User with this email already exists' });
     }
 
+    const existingUsername = await prisma.user.findUnique({
+      where: { username },
+    });
+
+    if (existingUsername) {
+      return res.status(409).json({ error: 'Username already taken' });
+    }
+
     // Create user
-    const hashedPassword = hashPassword(password);
     const user = await prisma.user.create({
       data: {
         email,
+        username,
         password: hashedPassword,
         role,
       },
       select: {
         id: true,
         email: true,
+        username: true,
         role: true,
         createdAt: true,
       },
@@ -103,31 +116,42 @@ router.post('/register', async (req: Request, res: Response) => {
 
 /**
  * POST /api/auth/login
- * Login with email and password
+ * Login with email/username and password (password optional for testing)
  */
 router.post('/login', async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
+    const { email, username, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+    // Allow login with either email or username
+    if (!email && !username) {
+      return res.status(400).json({ error: 'Email or username is required' });
     }
 
     const prisma = getPrismaClient();
 
-    // Find user
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+    // Find user by email or username
+    let user = null;
+    if (email) {
+      user = await prisma.user.findUnique({
+        where: { email },
+      });
+    } else if (username) {
+      user = await prisma.user.findUnique({
+        where: { username },
+      });
     }
 
-    // Check password
-    const hashedPassword = hashPassword(password);
-    if (user.password !== hashedPassword) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    // For testing: if no password provided, allow login anyway
+    // If password provided, validate it
+    if (password && user.password) {
+      const hashedPassword = hashPassword(password);
+      if (user.password !== hashedPassword) {
+        return res.status(401).json({ error: 'Invalid password' });
+      }
     }
 
     // Create session
@@ -139,6 +163,7 @@ router.post('/login', async (req: Request, res: Response) => {
       user: {
         id: user.id,
         email: user.email,
+        username: user.username,
         role: user.role,
       },
       token,
@@ -192,6 +217,7 @@ router.get('/me', async (req: Request, res: Response) => {
       select: {
         id: true,
         email: true,
+        username: true,
         role: true,
         createdAt: true,
       },

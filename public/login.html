@@ -163,12 +163,12 @@
         <div id="login-form" class="form-content active">
             <form onsubmit="handleLogin(event)">
                 <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="login-email" placeholder="your@email.com" required>
+                    <label>Email or Username</label>
+                    <input type="text" id="login-email" placeholder="your@email.com or username" required>
                 </div>
                 <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="login-password" placeholder="••••••••" required>
+                    <label>Password (optional for testing)</label>
+                    <input type="password" id="login-password" placeholder="Leave empty for testing">
                 </div>
                 <button type="submit" class="btn btn-primary" id="login-btn">Login</button>
                 <div id="login-loading" class="loading">Logging in...</div>
@@ -179,15 +179,20 @@
         <div id="register-form" class="form-content">
             <form onsubmit="handleRegister(event)">
                 <div class="form-group">
-                    <label>Email</label>
+                    <label>Email *</label>
                     <input type="email" id="register-email" placeholder="your@email.com" required>
                 </div>
                 <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="register-password" placeholder="At least 6 characters" required minlength="6">
+                    <label>Username *</label>
+                    <input type="text" id="register-username" placeholder="username" required pattern="[a-zA-Z0-9_-]{3,20}" title="3-20 characters (letters, numbers, _, -)">
+                    <div style="font-size: 0.85em; color: #666; margin-top: 4px;">3-20 characters (letters, numbers, _, -)</div>
                 </div>
                 <div class="form-group">
-                    <label>Role</label>
+                    <label>Password (optional for testing)</label>
+                    <input type="password" id="register-password" placeholder="Leave empty for testing" minlength="6">
+                </div>
+                <div class="form-group">
+                    <label>Role *</label>
                     <select id="register-role" required>
                         <option value="CLIPPER">Clipper</option>
                         <option value="ADMIN">Admin</option>
@@ -237,13 +242,13 @@
             event.preventDefault();
             hideMessages();
 
-            const email = document.getElementById('login-email').value.trim();
+            const emailOrUsername = document.getElementById('login-email').value.trim();
             const password = document.getElementById('login-password').value;
             const btn = document.getElementById('login-btn');
             const loading = document.getElementById('login-loading');
 
-            if (!email || !password) {
-                showError('Please fill in all fields');
+            if (!emailOrUsername) {
+                showError('Please enter email or username');
                 return;
             }
 
@@ -251,12 +256,18 @@
             loading.classList.add('show');
 
             try {
+                // Determine if it's email or username
+                const isEmail = emailOrUsername.includes('@');
+                const loginData = isEmail 
+                    ? { email: emailOrUsername, password: password || undefined }
+                    : { username: emailOrUsername, password: password || undefined };
+
                 const response = await fetch(`${API_BASE}/api/auth/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ email, password }),
+                    body: JSON.stringify(loginData),
                 });
 
                 const data = await response.json();
@@ -293,17 +304,26 @@
             hideMessages();
 
             const email = document.getElementById('register-email').value.trim();
+            const username = document.getElementById('register-username').value.trim();
             const password = document.getElementById('register-password').value;
             const role = document.getElementById('register-role').value;
             const btn = document.getElementById('register-btn');
             const loading = document.getElementById('register-loading');
 
-            if (!email || !password) {
-                showError('Please fill in all fields');
+            if (!email || !username) {
+                showError('Please fill in email and username');
                 return;
             }
 
-            if (password.length < 6) {
+            // Validate username format
+            const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
+            if (!usernameRegex.test(username)) {
+                showError('Username must be 3-20 characters (letters, numbers, _, -)');
+                return;
+            }
+
+            // Password is optional for testing, but if provided, must be at least 6 chars
+            if (password && password.length > 0 && password.length < 6) {
                 showError('Password must be at least 6 characters');
                 return;
             }
@@ -317,7 +337,12 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ email, password, role }),
+                    body: JSON.stringify({ 
+                        email, 
+                        username, 
+                        password: password || undefined, 
+                        role 
+                    }),
                 });
 
                 const data = await response.json();
