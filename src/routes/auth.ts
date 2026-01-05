@@ -86,14 +86,22 @@ router.post('/register', async (req: Request, res: Response) => {
     try {
       // Build user data object
       const userData: any = {
-        email,
+        email: email.trim(),
         password: hashedPassword,
         role,
       };
       
-      // Only add username if it's provided and not empty
-      if (username && username.trim()) {
-        userData.username = username.trim();
+      // Only add username if it's provided and not empty (use null instead of empty string)
+      const trimmedUsername = username?.trim();
+      if (trimmedUsername && trimmedUsername.length > 0) {
+        // Validate username length
+        if (trimmedUsername.length > 255) {
+          return res.status(400).json({ error: 'Username is too long (max 255 characters)' });
+        }
+        userData.username = trimmedUsername;
+      } else {
+        // Explicitly set to null if empty (don't include empty string)
+        userData.username = null;
       }
       
       user = await prisma.user.create({
@@ -210,6 +218,18 @@ router.post('/register', async (req: Request, res: Response) => {
         error: 'Database schema error',
         message: 'Username field may not exist in database. Please run migrations.',
         details: error.message
+      });
+    }
+    
+    if (error.code === 'P2022') {
+      // Value out of range for the type
+      const field = error.meta?.column_name || error.meta?.target || 'unknown field';
+      return res.status(400).json({ 
+        error: 'Invalid input value',
+        message: `The value for ${field} is out of range or too long. Please check your input.`,
+        details: error.message,
+        meta: error.meta,
+        hint: 'Username must be 3-20 characters, email must be valid format'
       });
     }
     
