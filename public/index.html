@@ -1295,8 +1295,17 @@
         });
 
         window.testSubmitContentAuto = async function() {
+            const submitButton = document.querySelector('button[onclick*="testSubmitContentAuto"]');
             const url = document.getElementById('content-url').value;
             const responseEl = document.getElementById('submission-response');
+            
+            // Disable button to prevent double-clicks
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.style.opacity = '0.6';
+                submitButton.style.cursor = 'not-allowed';
+            }
+            
             responseEl.classList.add('show');
             responseEl.textContent = 'Detecting platform and submitting...';
             responseEl.className = 'response show';
@@ -1304,6 +1313,12 @@
             if (!url) {
                 responseEl.textContent = 'Please enter a URL';
                 responseEl.className = 'response show error';
+                // Re-enable button
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.style.opacity = '1';
+                    submitButton.style.cursor = 'pointer';
+                }
                 return;
             }
 

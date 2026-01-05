@@ -916,6 +916,16 @@ router.post('/auto', async (req: Request, res: Response) => {
       });
 
       if (existing) {
+        // If the existing submission belongs to the current user, return it as success
+        // This handles race conditions where user clicks multiple times
+        if (existing.userId === userId) {
+          return res.status(200).json({
+            message: 'Submission already exists (created by you)',
+            submission: existing,
+          });
+        }
+        
+        // Otherwise, it's a conflict (different user or system issue)
         return res.status(409).json({ 
           error: 'Submission already exists for this video',
           submission: existing,
