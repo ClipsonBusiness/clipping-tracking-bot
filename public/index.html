@@ -1521,10 +1521,6 @@
                         responseEl.textContent = output;
                         responseEl.className = response.ok ? 'response show' : 'response show error';
                     }
-                } else if (response.status === 409) {
-                    output += '\n\nℹ️ This content has already been submitted.';
-                    responseEl.textContent = output;
-                    responseEl.className = response.ok ? 'response show' : 'response show error';
                 } else {
                     // Only set textContent if we haven't already added HTML content
                     if (!responseEl.querySelector('div')) {
