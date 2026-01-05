@@ -972,6 +972,29 @@
             if (token) {
                 headers['Authorization'] = `Bearer ${token}`;
                 console.log('Sending auth token:', token.substring(0, 20) + '...');
+                console.log('Full Authorization header:', headers['Authorization'].substring(0, 50) + '...');
+                
+                // Verify token is still valid before making request
+                try {
+                    const verifyResponse = await fetch(`${API_BASE}/api/auth/me`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (!verifyResponse.ok) {
+                        console.warn('Token validation failed, user may need to login again');
+                        responseEl.innerHTML = `
+                            <div style="padding: 15px; background: #fee2e2; border: 1px solid #ef4444; border-radius: 6px; color: #991b1b;">
+                                <strong>⚠️ Session expired!</strong><br>
+                                Your login session has expired. Please log in again.<br>
+                                <a href="/login.html" style="color: #667eea; text-decoration: underline; margin-top: 8px; display: inline-block;">Go to Login Page</a>
+                            </div>
+                        `;
+                        responseEl.className = 'response show error';
+                        checkAuthStatus(); // Update auth status display
+                        return;
+                    }
+                } catch (verifyError) {
+                    console.error('Error verifying token:', verifyError);
+                }
             } else {
                 // Check if user is logged in
                 const user = localStorage.getItem('user');
