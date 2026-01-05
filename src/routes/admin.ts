@@ -130,7 +130,23 @@ router.get('/submissions', async (req: Request, res: Response) => {
       orderBy,
       skip: (page - 1) * pageSize,
       take: pageSize,
-    });
+    }) as Array<{
+      id: string;
+      userId: string;
+      platform: string;
+      status: string;
+      createdAt: Date;
+      updatedAt: Date;
+      campaignId: string | null;
+      contentId: string;
+      latestViews: number;
+      latestLikes: number;
+      latestComments: number;
+      latestShares: number;
+      user: { id: string; email: string };
+      campaign: { id: string; name: string } | null;
+      [key: string]: any;
+    }>;
 
     // Get handles for each user (batch query to avoid N+1)
     const userIds = submissions.map(s => s.userId);
@@ -166,9 +182,6 @@ router.get('/submissions', async (req: Request, res: Response) => {
         ? (engagement / submission.latestViews) * 100 
         : 0;
 
-      // Type-safe campaign access (Prisma includes campaign in the query result)
-      const campaign = (submission as any).campaign;
-
       return {
         id: submission.id,
         platform: submission.platform,
@@ -176,9 +189,9 @@ router.get('/submissions', async (req: Request, res: Response) => {
         creatorId: submission.userId,
         creatorEmail: submission.user.email,
         creatorHandle,
-        campaign: campaign ? {
-          id: campaign.id,
-          name: campaign.name,
+        campaign: submission.campaign ? {
+          id: submission.campaign.id,
+          name: submission.campaign.name,
         } : null,
         canonicalUrl: submission.canonicalUrl || '',
         thumbnailUrl: null, // Not in schema, return null
