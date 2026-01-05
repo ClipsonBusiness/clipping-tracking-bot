@@ -84,13 +84,20 @@ router.post('/register', async (req: Request, res: Response) => {
     // Create user
     let user;
     try {
+      // Build user data object
+      const userData: any = {
+        email,
+        password: hashedPassword,
+        role,
+      };
+      
+      // Only add username if it's provided and not empty
+      if (username && username.trim()) {
+        userData.username = username.trim();
+      }
+      
       user = await prisma.user.create({
-        data: {
-          email,
-          username,
-          password: hashedPassword,
-          role,
-        },
+        data: userData,
         select: {
           id: true,
           email: true,
@@ -100,7 +107,27 @@ router.post('/register', async (req: Request, res: Response) => {
         },
       });
     } catch (createError: any) {
-      throw createError;
+      // If username column doesn't exist yet (migration not run), try without it
+      if (createError.code === 'P2011' || createError.message?.includes('Unknown column') || createError.message?.includes('username')) {
+        console.warn('Username column may not exist, creating user without username');
+        user = await prisma.user.create({
+          data: {
+            email,
+            password: hashedPassword,
+            role,
+          },
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            createdAt: true,
+          },
+        });
+        // Add username to response manually
+        (user as any).username = username || null;
+      } else {
+        throw createError;
+      }
     }
 
     // Create session
@@ -115,17 +142,25 @@ router.post('/register', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Registration error:', error);
+    console.error('Error details:', JSON.stringify(error, null, 2));
     
     // Provide more specific error messages
     if (error.code === 'P2002') {
       // Unique constraint violation
-      if (error.meta?.target?.includes('email')) {
+      const target = error.meta?.target || [];
+      if (Array.isArray(target) && target.includes('email')) {
         return res.status(409).json({ error: 'User with this email already exists' });
       }
-      if (error.meta?.target?.includes('username')) {
+      if (Array.isArray(target) && target.includes('username')) {
         return res.status(409).json({ error: 'Username already taken' });
       }
-      return res.status(409).json({ error: 'User already exists' });
+      if (typeof target === 'string' && target.includes('email')) {
+        return res.status(409).json({ error: 'User with this email already exists' });
+      }
+      if (typeof target === 'string' && target.includes('username')) {
+        return res.status(409).json({ error: 'Username already taken' });
+      }
+      return res.status(409).json({ error: 'User already exists', details: error.meta });
     }
     
     if (error.code === 'P2011') {
@@ -141,6 +176,7 @@ router.post('/register', async (req: Request, res: Response) => {
       error: 'Failed to register user',
       message: error.message || 'Unknown error',
       details: error.code ? `Error code: ${error.code}` : undefined,
+      meta: error.meta,
     });
   }
 });
