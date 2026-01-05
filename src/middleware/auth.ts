@@ -1,5 +1,20 @@
 import { Request, Response, NextFunction } from 'express';
-import { sessions } from '../routes/auth';
+
+// Import sessions map (lazy import to avoid circular dependency)
+let sessions: Map<string, { userId: string; role: string; expiresAt: number }> | null = null;
+
+function getSessions() {
+  if (!sessions) {
+    try {
+      const authModule = require('../routes/auth');
+      sessions = authModule.sessions;
+    } catch (e) {
+      // If auth routes not loaded yet, create empty map
+      sessions = new Map();
+    }
+  }
+  return sessions;
+}
 
 /**
  * Auth middleware that validates session tokens
@@ -39,7 +54,8 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
 
   // Validate session token
   if (token) {
-    const session = sessions.get(token);
+    const sessionMap = getSessions();
+    const session = sessionMap?.get(token);
     if (session && session.expiresAt > Date.now()) {
       req.user = {
         id: session.userId,
