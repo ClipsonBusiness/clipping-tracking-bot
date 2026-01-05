@@ -144,9 +144,10 @@ router.post('/register', async (req: Request, res: Response) => {
       });
       
       // Fetch user - only select fields that definitely exist
+      const userId = user.id;
       try {
         user = await prisma.user.findUnique({
-          where: { id: user.id },
+          where: { id: userId },
           select: {
             id: true,
             email: true,
@@ -159,7 +160,7 @@ router.post('/register', async (req: Request, res: Response) => {
         // If fetch fails due to username, try without it
         if (fetchError.message?.includes('username')) {
           user = await prisma.user.findUnique({
-            where: { id: user.id },
+            where: { id: userId },
             select: {
               id: true,
               email: true,
@@ -175,6 +176,8 @@ router.post('/register', async (req: Request, res: Response) => {
       // Add username to response (for frontend compatibility)
       if (user) {
         (user as any).username = (usernameColumnExists && trimmedUsername) ? trimmedUsername : null;
+      } else {
+        throw new Error('Failed to fetch created user');
       }
     } catch (createError: any) {
       // If username column doesn't exist yet (migration not run), try without it
