@@ -34,7 +34,8 @@ declare global {
 
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
   // Try to get token from Authorization header or cookie
-  const token = req.headers.authorization?.replace('Bearer ', '') || 
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.replace('Bearer ', '') || 
                 req.cookies?.token ||
                 req.headers['x-auth-token'] as string;
 
@@ -55,13 +56,39 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
   // Validate session token
   if (token) {
     const sessionMap = getSessions();
+    
+    // Debug logging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Auth Middleware] Token received:', token.substring(0, 20) + '...');
+      console.log('[Auth Middleware] Session map size:', sessionMap?.size || 0);
+    }
+    
     const session = sessionMap?.get(token);
-    if (session && session.expiresAt > Date.now()) {
-      req.user = {
-        id: session.userId,
-        role: session.role as 'CLIPPER' | 'ADMIN',
-      };
-      return next();
+    
+    if (session) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Auth Middleware] Session found:', { userId: session.userId, role: session.role, expiresAt: new Date(session.expiresAt).toISOString() });
+      }
+      
+      if (session.expiresAt > Date.now()) {
+        req.user = {
+          id: session.userId,
+          role: session.role as 'CLIPPER' | 'ADMIN',
+        };
+        return next();
+      } else {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[Auth Middleware] Session expired');
+        }
+      }
+    } else {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Auth Middleware] Session not found for token');
+        // Log all available tokens for debugging
+        if (sessionMap && sessionMap.size > 0) {
+          console.log('[Auth Middleware] Available tokens:', Array.from(sessionMap.keys()).map(t => t.substring(0, 20) + '...'));
+        }
+      }
     }
   }
 
