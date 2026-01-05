@@ -65,39 +65,37 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
   if (token) {
     const sessionMap = getSessions();
     
-    // Debug logging
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[Auth Middleware] Token received:', token.substring(0, 20) + '...');
-      console.log('[Auth Middleware] Session map size:', sessionMap?.size || 0);
-    }
+    // Debug logging (always enabled for troubleshooting)
+    console.log('[Auth Middleware] Token received:', token.substring(0, 20) + '...');
+    console.log('[Auth Middleware] Session map size:', sessionMap?.size || 0);
+    console.log('[Auth Middleware] Authorization header:', authHeader?.substring(0, 30) + '...');
     
     const session = sessionMap?.get(token);
     
     if (session) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[Auth Middleware] Session found:', { userId: session.userId, role: session.role, expiresAt: new Date(session.expiresAt).toISOString() });
-      }
+      console.log('[Auth Middleware] Session found:', { userId: session.userId, role: session.role, expiresAt: new Date(session.expiresAt).toISOString(), now: new Date().toISOString() });
       
       if (session.expiresAt > Date.now()) {
         req.user = {
           id: session.userId,
           role: session.role as 'CLIPPER' | 'ADMIN',
         };
+        console.log('[Auth Middleware] Authentication successful');
         return next();
       } else {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[Auth Middleware] Session expired');
-        }
+        console.log('[Auth Middleware] Session expired. Expires:', new Date(session.expiresAt).toISOString(), 'Now:', new Date().toISOString());
       }
     } else {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[Auth Middleware] Session not found for token');
-        // Log all available tokens for debugging
-        if (sessionMap && sessionMap.size > 0) {
-          console.log('[Auth Middleware] Available tokens:', Array.from(sessionMap.keys()).map(t => t.substring(0, 20) + '...'));
-        }
+      console.log('[Auth Middleware] Session not found for token');
+      // Log all available tokens for debugging
+      if (sessionMap && sessionMap.size > 0) {
+        console.log('[Auth Middleware] Available tokens:', Array.from(sessionMap.keys()).map(t => t.substring(0, 20) + '...'));
+      } else {
+        console.log('[Auth Middleware] Session map is empty!');
       }
     }
+  } else {
+    console.log('[Auth Middleware] No token provided');
   }
 
   // If no valid auth, return 401
