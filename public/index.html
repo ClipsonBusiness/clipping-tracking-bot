@@ -612,6 +612,12 @@
         <div class="section">
             <h2>👤 Social Account Management</h2>
             
+            <!-- Auth Status Display -->
+            <div id="auth-status" style="margin-bottom: 15px; padding: 10px; background: #f0f9ff; border-radius: 6px; font-size: 0.9em; display: none;">
+                <strong>Auth Status:</strong> <span id="auth-status-text"></span>
+                <button onclick="checkAuthStatus()" style="margin-left: 10px; padding: 4px 8px; background: #667eea; color: white; border: none; border-radius: 4px; font-size: 0.85em; cursor: pointer;">Refresh</button>
+            </div>
+            
             <!-- Create Social Account -->
             <div class="endpoint">
                 <div class="endpoint-header">
@@ -920,6 +926,29 @@
             }
         }
 
+        // Check and display auth status
+        function checkAuthStatus() {
+            const token = localStorage.getItem('authToken');
+            const user = localStorage.getItem('user');
+            const statusEl = document.getElementById('auth-status');
+            const statusTextEl = document.getElementById('auth-status-text');
+            
+            if (statusEl && statusTextEl) {
+                statusEl.style.display = 'block';
+                
+                if (token && user) {
+                    try {
+                        const userObj = JSON.parse(user);
+                        statusTextEl.innerHTML = `<span style="color: #10b981;">✅ Logged in as ${userObj.email || userObj.username || 'User'} (${userObj.role})</span>`;
+                    } catch (e) {
+                        statusTextEl.innerHTML = `<span style="color: #10b981;">✅ Logged in (token present)</span>`;
+                    }
+                } else {
+                    statusTextEl.innerHTML = `<span style="color: #ef4444;">❌ Not logged in</span> - <a href="/login.html" style="color: #667eea; text-decoration: underline;">Login here</a>`;
+                }
+            }
+        }
+
         async function testCreateSocialAccount() {
             const platform = document.getElementById('social-platform').value;
             const handle = document.getElementById('social-handle').value;
@@ -942,6 +971,7 @@
             
             if (token) {
                 headers['Authorization'] = `Bearer ${token}`;
+                console.log('Sending auth token:', token.substring(0, 20) + '...');
             } else {
                 // Check if user is logged in
                 const user = localStorage.getItem('user');
@@ -954,6 +984,7 @@
                         </div>
                     `;
                     responseEl.className = 'response show error';
+                    checkAuthStatus(); // Update auth status display
                     return;
                 }
                 // Fallback to test user for backwards compatibility (shouldn't happen if logged in)
@@ -969,6 +1000,10 @@
                 });
 
                 const data = await response.json();
+                
+                // Log response for debugging
+                console.log('Response status:', response.status);
+                console.log('Response data:', data);
                 
                 // If successful or existing account, show ONLY the code and "Put this in bio"
                 if ((response.ok || response.status === 409) && data.code) {
@@ -1028,7 +1063,14 @@
                     let output = `Status: ${response.status} ${response.statusText}\n\n`;
                     output += JSON.stringify(data, null, 2);
                     
-                    if (response.status === 503 && data.error === 'Database not configured') {
+                    if (response.status === 401) {
+                        output += '\n\n⚠️ Authentication failed. Please make sure you are logged in.';
+                        output += '\n\nTroubleshooting:';
+                        output += '\n1. Go to /login.html and log in';
+                        output += '\n2. Make sure the auth token is stored in localStorage';
+                        output += '\n3. Try refreshing this page after logging in';
+                        checkAuthStatus(); // Update auth status display
+                    } else if (response.status === 503 && data.error === 'Database not configured') {
                         output += '\n\n⚠️ Database is not configured. Set DATABASE_URL in your .env file.';
                     }
                     
