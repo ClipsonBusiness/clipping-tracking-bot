@@ -1481,11 +1481,16 @@
         }
 
 
-        // Check auth status on page load
+        // Check server status and auth status on page load
+        function initializePage() {
+            checkStatus(); // Check server health
+            checkAuthStatus(); // Check auth status
+        }
+        
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', checkAuthStatus);
+            document.addEventListener('DOMContentLoaded', initializePage);
         } else {
-            checkAuthStatus();
+            initializePage();
         }
         
         // Update URL count as user types
