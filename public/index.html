@@ -1101,14 +1101,24 @@
                 return;
             }
 
+            // Get auth token from localStorage
+            const token = localStorage.getItem('authToken');
+            const headers = {
+                'Content-Type': 'application/json',
+            };
+            
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            } else {
+                // Fallback to test user for backwards compatibility
+                headers['x-user-id'] = 'test-user-123';
+                headers['x-user-role'] = 'CLIPPER';
+            }
+
             try {
                 const response = await fetch(`${API_BASE}/api/social-accounts/${accountId}/verify`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-user-id': 'test-user-123',
-                        'x-user-role': 'CLIPPER'
-                    }
+                    headers: headers
                 });
 
                 const data = await response.json();
