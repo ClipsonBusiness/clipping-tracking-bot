@@ -166,6 +166,9 @@ router.get('/submissions', async (req: Request, res: Response) => {
         ? (engagement / submission.latestViews) * 100 
         : 0;
 
+      // Type-safe campaign access (Prisma includes campaign in the query result)
+      const campaign = (submission as any).campaign;
+
       return {
         id: submission.id,
         platform: submission.platform,
@@ -173,9 +176,9 @@ router.get('/submissions', async (req: Request, res: Response) => {
         creatorId: submission.userId,
         creatorEmail: submission.user.email,
         creatorHandle,
-        campaign: submission.campaign ? {
-          id: submission.campaign.id,
-          name: submission.campaign.name,
+        campaign: campaign ? {
+          id: campaign.id,
+          name: campaign.name,
         } : null,
         canonicalUrl: submission.canonicalUrl || '',
         thumbnailUrl: null, // Not in schema, return null

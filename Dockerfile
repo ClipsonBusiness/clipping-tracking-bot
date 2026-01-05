@@ -20,11 +20,11 @@ COPY prisma ./prisma/
 # Install dependencies
 RUN npm ci --only=production=false
 
-# Generate Prisma Client
-RUN npx prisma generate
-
-# Copy source code
+# Copy source code (needed for Prisma schema validation)
 COPY . .
+
+# Generate Prisma Client (after copying all files to ensure schema is available)
+RUN npx prisma generate
 
 # Build TypeScript
 RUN npm run build
