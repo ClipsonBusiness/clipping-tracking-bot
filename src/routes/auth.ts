@@ -35,8 +35,8 @@ router.post('/register', async (req: Request, res: Response) => {
   try {
     const { email, username, password, role = 'CLIPPER' } = req.body;
 
-    if (!email || !username) {
-      return res.status(400).json({ error: 'Email and username are required' });
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
     }
 
     // Validate email format
@@ -45,10 +45,14 @@ router.post('/register', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Invalid email format' });
     }
 
-    // Validate username (alphanumeric, underscore, hyphen, 3-20 chars)
-    const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
-    if (!usernameRegex.test(username)) {
-      return res.status(400).json({ error: 'Username must be 3-20 characters (letters, numbers, _, -)' });
+    // Validate username if provided (optional for testing/backwards compatibility)
+    const trimmedUsername = username?.trim();
+    if (trimmedUsername && trimmedUsername.length > 0) {
+      // Validate username format (alphanumeric, underscore, hyphen, 3-20 chars)
+      const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
+      if (!usernameRegex.test(trimmedUsername)) {
+        return res.status(400).json({ error: 'Username must be 3-20 characters (letters, numbers, _, -)' });
+      }
     }
 
     // Password is optional for testing

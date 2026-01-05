@@ -183,9 +183,9 @@
                     <input type="email" id="register-email" placeholder="your@email.com" required>
                 </div>
                 <div class="form-group">
-                    <label>Username *</label>
-                    <input type="text" id="register-username" placeholder="username" required title="3-20 characters (letters, numbers, _, -)" minlength="3" maxlength="20">
-                    <div style="font-size: 0.85em; color: #666; margin-top: 4px;">3-20 characters (letters, numbers, _, -)</div>
+                    <label>Username (optional)</label>
+                    <input type="text" id="register-username" placeholder="username" title="3-20 characters (letters, numbers, _, -)" minlength="3" maxlength="20">
+                    <div style="font-size: 0.85em; color: #666; margin-top: 4px;">3-20 characters (letters, numbers, _, -). Optional for testing.</div>
                 </div>
                 <div class="form-group">
                     <label>Password (optional for testing)</label>
@@ -310,16 +310,18 @@
             const btn = document.getElementById('register-btn');
             const loading = document.getElementById('register-loading');
 
-            if (!email || !username) {
-                showError('Please fill in email and username');
+            if (!email) {
+                showError('Please fill in email');
                 return;
             }
 
-            // Validate username format
-            const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
-            if (!usernameRegex.test(username)) {
-                showError('Username must be 3-20 characters (letters, numbers, _, -)');
-                return;
+            // Validate username format if provided (optional)
+            if (username && username.trim()) {
+                const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
+                if (!usernameRegex.test(username.trim())) {
+                    showError('Username must be 3-20 characters (letters, numbers, _, -)');
+                    return;
+                }
             }
 
             // Password is optional for testing, but if provided, must be at least 6 chars
