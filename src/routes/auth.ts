@@ -193,13 +193,13 @@ router.post('/register', async (req: Request, res: Response) => {
             role: validRole,
           };
           
-          user = await prisma.user.create({
+          const createdUserWithoutUsername = await prisma.user.create({
             data: userDataWithoutUsername,
           });
           
           // Fetch user without username field
           user = await prisma.user.findUnique({
-            where: { id: user.id },
+            where: { id: createdUserWithoutUsername.id },
             select: {
               id: true,
               email: true,
@@ -209,11 +209,10 @@ router.post('/register', async (req: Request, res: Response) => {
           });
           
           // Add username to response manually (for frontend)
-          if (user) {
-            (user as any).username = null; // Column doesn't exist, so username is null
-          } else {
-            throw new Error('Failed to create user');
+          if (!user) {
+            throw new Error('Failed to fetch created user');
           }
+          (user as any).username = null; // Column doesn't exist, so username is null
         } catch (fallbackError: any) {
           console.error('Fallback user creation also failed:', fallbackError);
           throw fallbackError;
