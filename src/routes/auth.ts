@@ -79,21 +79,50 @@ router.post('/register', async (req: Request, res: Response) => {
     }
 
     // Create user
-    const user = await prisma.user.create({
-      data: {
-        email,
-        username,
-        password: hashedPassword,
-        role,
-      },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        role: true,
-        createdAt: true,
-      },
-    });
+    let user;
+    try {
+      user = await prisma.user.create({
+        data: {
+          email,
+          username,
+          password: hashedPassword,
+          role,
+        },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          role: true,
+          createdAt: true,
+        },
+      });
+    } catch (createError: any) {
+      // If username column doesn't exist, try without it (for backwards compatibility during migration)
+      if (createError.message?.includes('Unknown column') || createError.message?.includes('column') && createError.message?.includes('username')) {
+        console.warn('Username column not found, creating user without username (migration may not have run)');
+        // Generate a username from email as fallback
+        const fallbackUsername = email.split('@')[0].replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 20) || `user_${Date.now()}`;
+        
+        user = await prisma.user.create({
+          data: {
+            email,
+            password: hashedPassword,
+            role,
+          },
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            createdAt: true,
+          },
+        });
+        
+        // Add username to response if available
+        (user as any).username = fallbackUsername;
+      } else {
+        throw createError;
+      }
+    }
 
     // Create session
     const token = generateToken();
@@ -107,9 +136,32 @@ router.post('/register', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Registration error:', error);
+    
+    // Provide more specific error messages
+    if (error.code === 'P2002') {
+      // Unique constraint violation
+      if (error.meta?.target?.includes('email')) {
+        return res.status(409).json({ error: 'User with this email already exists' });
+      }
+      if (error.meta?.target?.includes('username')) {
+        return res.status(409).json({ error: 'Username already taken' });
+      }
+      return res.status(409).json({ error: 'User already exists' });
+    }
+    
+    if (error.code === 'P2011') {
+      // Null constraint violation (username might not exist in DB yet)
+      return res.status(500).json({ 
+        error: 'Database schema error',
+        message: 'Username field may not exist in database. Please run migrations.',
+        details: error.message
+      });
+    }
+    
     res.status(500).json({
       error: 'Failed to register user',
-      message: error.message,
+      message: error.message || 'Unknown error',
+      details: error.code ? `Error code: ${error.code}` : undefined,
     });
   }
 });

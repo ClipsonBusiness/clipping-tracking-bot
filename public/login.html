@@ -363,7 +363,10 @@
                         }
                     }, 1000);
                 } else {
-                    showError(data.error || 'Registration failed');
+                    // Show detailed error message
+                    const errorMsg = data.error || data.message || 'Registration failed';
+                    const details = data.details ? ` (${data.details})` : '';
+                    showError(`${errorMsg}${details}`);
                     btn.disabled = false;
                     loading.classList.remove('show');
                 }
