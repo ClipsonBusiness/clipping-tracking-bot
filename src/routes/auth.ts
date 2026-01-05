@@ -337,7 +337,8 @@ router.post('/login', async (req: Request, res: Response) => {
     // Find user by email or username
     let user: any = null;
     if (email) {
-      if (usernameColumnExists) {
+      if (usernameColumnExists && passwordColumnExists) {
+        // Both columns exist, use Prisma normally
         user = await prisma.user.findUnique({
           where: { email },
         });
