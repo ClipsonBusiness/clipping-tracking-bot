@@ -14,7 +14,7 @@ datasource db {
 model User {
   id            String          @id @default(cuid())
   email         String          @unique
-  username      String          @unique
+  username      String?         @unique // Optional for backwards compatibility
   password      String?         // Hashed password (optional for OAuth users)
   role          String          @default("CLIPPER") // CLIPPER | ADMIN
   createdAt     DateTime        @default(now())

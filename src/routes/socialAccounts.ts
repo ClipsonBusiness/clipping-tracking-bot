@@ -79,10 +79,13 @@ router.post('/youtube', async (req: Request, res: Response) => {
       
       if (!user) {
         // Create user if doesn't exist
+        // Generate username from userId
+        const generatedUsername = `user_${userId.substring(0, 15)}_${Date.now().toString().slice(-6)}`;
         user = await getPrismaClient().user.create({
           data: {
             id: userId,
             email: `${userId}@example.com`, // Placeholder email
+            username: generatedUsername,
             role: 'CLIPPER',
           },
         });

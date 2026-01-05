@@ -70,12 +70,15 @@ router.post('/register', async (req: Request, res: Response) => {
       return res.status(409).json({ error: 'User with this email already exists' });
     }
 
-    const existingUsername = await prisma.user.findUnique({
-      where: { username },
-    });
+    // Check username uniqueness if provided
+    if (username) {
+      const existingUsername = await prisma.user.findFirst({
+        where: { username },
+      });
 
-    if (existingUsername) {
-      return res.status(409).json({ error: 'Username already taken' });
+      if (existingUsername) {
+        return res.status(409).json({ error: 'Username already taken' });
+      }
     }
 
     // Create user
@@ -97,31 +100,7 @@ router.post('/register', async (req: Request, res: Response) => {
         },
       });
     } catch (createError: any) {
-      // If username column doesn't exist, try without it (for backwards compatibility during migration)
-      if (createError.message?.includes('Unknown column') || createError.message?.includes('column') && createError.message?.includes('username')) {
-        console.warn('Username column not found, creating user without username (migration may not have run)');
-        // Generate a username from email as fallback
-        const fallbackUsername = email.split('@')[0].replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 20) || `user_${Date.now()}`;
-        
-        user = await prisma.user.create({
-          data: {
-            email,
-            password: hashedPassword,
-            role,
-          },
-          select: {
-            id: true,
-            email: true,
-            role: true,
-            createdAt: true,
-          },
-        });
-        
-        // Add username to response if available
-        (user as any).username = fallbackUsername;
-      } else {
-        throw createError;
-      }
+      throw createError;
     }
 
     // Create session
@@ -188,7 +167,7 @@ router.post('/login', async (req: Request, res: Response) => {
         where: { email },
       });
     } else if (username) {
-      user = await prisma.user.findUnique({
+      user = await prisma.user.findFirst({
         where: { username },
       });
     }
@@ -199,10 +178,18 @@ router.post('/login', async (req: Request, res: Response) => {
 
     // For testing: if no password provided, allow login anyway
     // If password provided, validate it
-    if (password && user.password) {
-      const hashedPassword = hashPassword(password);
-      if (user.password !== hashedPassword) {
-        return res.status(401).json({ error: 'Invalid password' });
+    if (password) {
+      // Fetch user with password field to check
+      const userWithPassword = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { password: true },
+      });
+      
+      if (userWithPassword?.password) {
+        const hashedPassword = hashPassword(password);
+        if (userWithPassword.password !== hashedPassword) {
+          return res.status(401).json({ error: 'Invalid password' });
+        }
       }
     }
 
@@ -215,7 +202,7 @@ router.post('/login', async (req: Request, res: Response) => {
       user: {
         id: user.id,
         email: user.email,
-        username: user.username,
+        username: user.username || null,
         role: user.role,
       },
       token,
@@ -269,7 +256,6 @@ router.get('/me', async (req: Request, res: Response) => {
       select: {
         id: true,
         email: true,
-        username: true,
         role: true,
         createdAt: true,
       },
