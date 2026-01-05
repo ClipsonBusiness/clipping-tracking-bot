@@ -938,6 +938,14 @@
                 responseEl.className = 'response show error';
             }
         }
+        
+        // Make functions globally accessible for onclick handlers
+        window.testHealth = testHealth;
+        window.testCreateSocialAccount = testCreateSocialAccount;
+        window.loadMyAccounts = loadMyAccounts;
+        window.testVerifySocialAccount = testVerifySocialAccount;
+        window.checkAuthStatus = checkAuthStatus;
+        window.copyVerificationCode = copyVerificationCode;
 
         // Check and display auth status
         function checkAuthStatus() {
@@ -1354,7 +1362,7 @@
                             verifiedAccountsHtml = `
                                 <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
                                     <strong>✅ Your verified ${detectedPlatform} accounts:</strong><br>
-                                    ${data.yourVerifiedAccounts.map((acc: any) => `• @${acc.handle} (ID: ${acc.platformUserId})`).join('<br>')}<br>
+                                    ${data.yourVerifiedAccounts.map((acc) => `• @${acc.handle} (ID: ${acc.platformUserId})`).join('<br>')}<br>
                                     <span style="color: #dc2626;">None of these match the video author.</span>
                                 </div>
                             `;
@@ -2352,6 +2360,17 @@
         // Check status on load and every 5 seconds
         checkStatus();
         setInterval(checkStatus, 5000);
+        
+        // Ensure all functions are globally accessible for onclick handlers
+        // (Some are already assigned above, but this ensures they're all available)
+        if (typeof window !== 'undefined') {
+            window.testHealth = window.testHealth || testHealth;
+            window.testCreateSocialAccount = window.testCreateSocialAccount || testCreateSocialAccount;
+            window.loadMyAccounts = window.loadMyAccounts || loadMyAccounts;
+            window.testVerifySocialAccount = window.testVerifySocialAccount || testVerifySocialAccount;
+            window.checkAuthStatus = window.checkAuthStatus || checkAuthStatus;
+            window.copyVerificationCode = window.copyVerificationCode || copyVerificationCode;
+        }
     </script>
 </body>
 </html>
