@@ -1326,7 +1326,10 @@
                     }
                 } else if (response.status === 403) {
                     if (data.error === 'AUTHOR_MISMATCH') {
-                        // Create a more user-friendly error display with actionable buttons
+                        // Create a wrapper div since <pre> doesn't support HTML well
+                        const wrapperDiv = document.createElement('div');
+                        wrapperDiv.style.cssText = 'white-space: normal;';
+                        
                         const errorDiv = document.createElement('div');
                         errorDiv.style.cssText = 'padding: 20px; background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; margin-top: 15px;';
                         
@@ -1373,7 +1376,7 @@
                                     <li>Try submitting again</li>
                                 </ol>
                             </div>
-                            <button id="goto-verification-btn" style="
+                            <button class="goto-verification-btn-${Date.now()}" style="
                                 background: #667eea;
                                 color: white;
                                 border: none;
@@ -1386,7 +1389,7 @@
                             ">
                                 🔗 Go to Verification
                             </button>
-                            <button id="show-accounts-btn" style="
+                            <button class="show-accounts-btn-${Date.now()}" style="
                                 background: #6b7280;
                                 color: white;
                                 border: none;
@@ -1400,14 +1403,17 @@
                             </button>
                         `;
                         
-                        // Clear responseEl and add the error div
-                        responseEl.innerHTML = '';
-                        responseEl.appendChild(errorDiv);
+                        wrapperDiv.appendChild(errorDiv);
+                        
+                        // Clear responseEl and add the wrapper
+                        responseEl.textContent = '';
+                        responseEl.appendChild(wrapperDiv);
                         responseEl.className = 'response show error';
                         
-                        // Add event listeners to buttons
-                        const gotoBtn = document.getElementById('goto-verification-btn');
-                        const showBtn = document.getElementById('show-accounts-btn');
+                        // Add event listeners to buttons using class selectors
+                        const timestamp = Date.now();
+                        const gotoBtn = errorDiv.querySelector(`.goto-verification-btn-${timestamp}`);
+                        const showBtn = errorDiv.querySelector(`.show-accounts-btn-${timestamp}`);
                         
                         if (gotoBtn) {
                             gotoBtn.addEventListener('click', function() {
@@ -1416,7 +1422,15 @@
                                 if (platformSelect) {
                                     platformSelect.value = detectedPlatform.toLowerCase();
                                 }
-                                const socialSection = document.querySelector('.section h2')?.parentElement;
+                                // Find the social account management section
+                                const sections = document.querySelectorAll('.section');
+                                let socialSection = null;
+                                sections.forEach(section => {
+                                    const h2 = section.querySelector('h2');
+                                    if (h2 && h2.textContent.includes('Social Account Management')) {
+                                        socialSection = section;
+                                    }
+                                });
                                 if (socialSection) {
                                     socialSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                 }
@@ -1431,7 +1445,14 @@
                         if (showBtn) {
                             showBtn.addEventListener('click', function() {
                                 loadMyAccounts();
-                                const socialSection = document.querySelector('.section h2')?.parentElement;
+                                const sections = document.querySelectorAll('.section');
+                                let socialSection = null;
+                                sections.forEach(section => {
+                                    const h2 = section.querySelector('h2');
+                                    if (h2 && h2.textContent.includes('Social Account Management')) {
+                                        socialSection = section;
+                                    }
+                                });
                                 if (socialSection) {
                                     socialSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                 }
@@ -1447,8 +1468,8 @@
                     responseEl.textContent = output;
                     responseEl.className = response.ok ? 'response show' : 'response show error';
                 } else {
-                    // Only set textContent if we haven't already set innerHTML (for AUTHOR_MISMATCH)
-                    if (responseEl.innerHTML === '' || !responseEl.querySelector('button')) {
+                    // Only set textContent if we haven't already added HTML content
+                    if (!responseEl.querySelector('div')) {
                         responseEl.textContent = output;
                         responseEl.className = response.ok ? 'response show' : 'response show error';
                     }
