@@ -33,41 +33,53 @@ setInterval(() => {
  */
 router.post('/register', async (req: Request, res: Response) => {
   try {
+    console.log('Registration request body:', JSON.stringify(req.body));
     const { email, username, password, role = 'CLIPPER' } = req.body;
 
-    if (!email) {
-      return res.status(400).json({ error: 'Email is required' });
+    // Validate email
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ error: 'Email is required and must be a string' });
+    }
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      return res.status(400).json({ error: 'Email cannot be empty' });
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(trimmedEmail)) {
       return res.status(400).json({ error: 'Invalid email format' });
     }
 
     // Validate username if provided (optional for testing/backwards compatibility)
-    const trimmedUsername = username?.trim();
-    if (trimmedUsername && trimmedUsername.length > 0) {
-      // Validate username format (alphanumeric, underscore, hyphen, 3-20 chars)
-      const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
-      if (!usernameRegex.test(trimmedUsername)) {
-        return res.status(400).json({ error: 'Username must be 3-20 characters (letters, numbers, _, -)' });
+    let trimmedUsername: string | null = null;
+    if (username && typeof username === 'string') {
+      trimmedUsername = username.trim();
+      if (trimmedUsername.length > 0) {
+        // Validate username format (alphanumeric, underscore, hyphen, 3-20 chars)
+        const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
+        if (!usernameRegex.test(trimmedUsername)) {
+          return res.status(400).json({ error: 'Username must be 3-20 characters (letters, numbers, _, -)' });
+        }
+      } else {
+        trimmedUsername = null;
       }
     }
 
     // Password is optional for testing
-    const hashedPassword = password ? hashPassword(password) : null;
+    const hashedPassword = (password && typeof password === 'string' && password.length > 0) 
+      ? hashPassword(password) 
+      : null;
 
     // Validate role
-    if (role !== 'CLIPPER' && role !== 'ADMIN') {
-      return res.status(400).json({ error: 'Invalid role' });
-    }
+    const validRole = (role === 'CLIPPER' || role === 'ADMIN') ? role : 'CLIPPER';
 
     const prisma = getPrismaClient();
 
-    // Check if user already exists by email or username
+    // Check if user already exists by email
     const existingEmail = await prisma.user.findUnique({
-      where: { email },
+      where: { email: trimmedEmail },
     });
 
     if (existingEmail) {
@@ -99,14 +111,12 @@ router.post('/register', async (req: Request, res: Response) => {
     try {
       // Build user data object
       const userData: any = {
-        email: email.trim(),
+        email: trimmedEmail,
         password: hashedPassword,
-        role,
+        role: validRole,
       };
       
-      // Don't include username in userData if column doesn't exist
-      // We'll try to add it, but catch the error if column doesn't exist
-      const trimmedUsername = username?.trim();
+      // Only add username if it's valid and not empty
       if (trimmedUsername && trimmedUsername.length > 0) {
         // Validate username length
         if (trimmedUsername.length > 255) {
@@ -132,11 +142,9 @@ router.post('/register', async (req: Request, res: Response) => {
         },
       });
       
-      // Try to add username to response if column exists
-      if (user && trimmedUsername) {
-        (user as any).username = trimmedUsername;
-      } else if (user) {
-        (user as any).username = null;
+      // Add username to response (for frontend compatibility)
+      if (user) {
+        (user as any).username = trimmedUsername || null;
       }
     } catch (createError: any) {
       // If username column doesn't exist yet (migration not run), try without it
@@ -148,9 +156,9 @@ router.post('/register', async (req: Request, res: Response) => {
         try {
           // Remove username from userData
           const userDataWithoutUsername: any = {
-            email: email.trim(),
+            email: trimmedEmail,
             password: hashedPassword,
-            role,
+            role: validRole,
           };
           
           user = await prisma.user.create({
@@ -170,7 +178,7 @@ router.post('/register', async (req: Request, res: Response) => {
           
           // Add username to response manually (for frontend)
           if (user) {
-            (user as any).username = username?.trim() || null;
+            (user as any).username = trimmedUsername || null;
           } else {
             throw new Error('Failed to create user');
           }
