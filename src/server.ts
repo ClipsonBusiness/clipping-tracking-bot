@@ -67,7 +67,11 @@ app.get('/health', (req, res) => {
 // Import routes
 import apiRoutes from './routes';
 import adminRoutes from './routes/admin';
+import authRoutes from './routes/auth';
 import { adminMiddleware } from './middleware/admin';
+
+// Public auth routes (no auth required)
+app.use('/api/auth', authRoutes);
 
 // Use routes
 app.use('/api', apiRoutes);

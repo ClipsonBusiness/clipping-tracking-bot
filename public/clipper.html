@@ -33,6 +33,25 @@
             color: #666;
             margin-bottom: 30px;
         }
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .logout-btn {
+            padding: 8px 16px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .logout-btn:hover {
+            background: #dc2626;
+        }
         .campaign-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -162,8 +181,13 @@
 </head>
 <body>
     <div class="container">
-        <h1>🎬 Clipper Dashboard</h1>
-        <p class="subtitle">Join campaigns and submit your content</p>
+        <div class="header-actions">
+            <div>
+                <h1>🎬 Clipper Dashboard</h1>
+                <p class="subtitle">Join campaigns and submit your content</p>
+            </div>
+            <button class="logout-btn" onclick="handleLogout()">Logout</button>
+        </div>
 
         <div id="campaigns-container">
             <div style="text-align: center; padding: 40px; color: #666;">
@@ -192,6 +216,42 @@
 
     <script>
         const API_BASE = window.location.origin;
+        
+        // Check authentication
+        const token = localStorage.getItem('authToken');
+        const user = JSON.parse(localStorage.getItem('user') || 'null');
+        
+        if (!token || !user) {
+            window.location.href = '/login.html';
+        }
+        
+        // Add auth token to all requests
+        const originalFetch = window.fetch;
+        window.fetch = function(...args) {
+            const [url, options = {}] = args;
+            options.headers = {
+                ...options.headers,
+                'Authorization': `Bearer ${token}`,
+            };
+            return originalFetch(url, options);
+        };
+        
+        async function handleLogout() {
+            try {
+                await fetch(`${API_BASE}/api/auth/logout`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+            } catch (e) {
+                // Ignore errors
+            }
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            window.location.href = '/login.html';
+        }
+        
         let campaigns = [];
         let joinedCampaigns = [];
 
@@ -303,8 +363,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'x-user-id': 'test-user-123',
-                        'x-user-role': 'CLIPPER'
+                        'Authorization': `Bearer ${token}`,
                     },
                     body: JSON.stringify({ url, campaignId })
                 });

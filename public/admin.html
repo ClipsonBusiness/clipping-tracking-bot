@@ -275,8 +275,13 @@
 </head>
 <body>
     <div class="container">
-        <h1>⚙️ Admin Dashboard</h1>
-        <p class="subtitle">Manage campaigns and review submissions</p>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+                <h1>⚙️ Admin Dashboard</h1>
+                <p class="subtitle">Manage campaigns and review submissions</p>
+            </div>
+            <button class="btn" onclick="handleLogout()" style="background: #ef4444; color: white;">Logout</button>
+        </div>
 
         <div class="tabs">
             <button class="tab active" onclick="switchTab('campaigns')">Campaigns</button>
@@ -613,6 +618,28 @@
 
     <script>
         const API_BASE = window.location.origin;
+        
+        // Check authentication
+        const token = localStorage.getItem('authToken');
+        const user = JSON.parse(localStorage.getItem('user') || 'null');
+        
+        if (!token || !user) {
+            window.location.href = '/login.html';
+        } else if (user.role !== 'ADMIN') {
+            alert('Admin access required');
+            window.location.href = '/clipper.html';
+        }
+        
+        // Add auth token to all requests
+        const originalFetch = window.fetch;
+        window.fetch = function(...args) {
+            const [url, options = {}] = args;
+            options.headers = {
+                ...options.headers,
+                'Authorization': `Bearer ${token}`,
+            };
+            return originalFetch(url, options);
+        };
 
         function toggleCreateForm() {
             const form = document.getElementById('create-campaign-form');
@@ -995,6 +1022,22 @@
             } catch (error) {
                 alert(`Error: ${error.message}`);
             }
+        }
+
+        async function handleLogout() {
+            try {
+                await fetch(`${API_BASE}/api/auth/logout`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+            } catch (e) {
+                // Ignore errors
+            }
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            window.location.href = '/login.html';
         }
 
         // Load campaigns on page load
