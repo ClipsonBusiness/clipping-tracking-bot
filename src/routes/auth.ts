@@ -93,9 +93,18 @@ router.post('/register', async (req: Request, res: Response) => {
     }
 
     // Check if user already exists by email
-    const existingEmail = await prisma.user.findUnique({
-      where: { email: trimmedEmail },
-    });
+    let existingEmail;
+    if (usernameColumnExists) {
+      existingEmail = await prisma.user.findUnique({
+        where: { email: trimmedEmail },
+      });
+    } else {
+      // Use raw SQL if username column doesn't exist
+      const result = await prisma.$queryRaw<Array<{id: string; email: string}>>`
+        SELECT id, email FROM "User" WHERE email = ${trimmedEmail} LIMIT 1
+      `;
+      existingEmail = result[0] || null;
+    }
 
     if (existingEmail) {
       return res.status(409).json({ error: 'User with this email already exists' });
@@ -118,106 +127,82 @@ router.post('/register', async (req: Request, res: Response) => {
       }
     }
 
-    // Create user
+    // Create user - use raw SQL if username column doesn't exist to avoid Prisma issues
     let user: { id: string; email: string; role: string; username?: string | null; createdAt: Date } | null = null;
-    try {
-      // Build user data object
-      const userData: any = {
-        email: trimmedEmail,
-        password: hashedPassword,
-        role: validRole,
-      };
-      
-      // Only add username if column exists and username is valid
-      if (usernameColumnExists && trimmedUsername && trimmedUsername.length > 0) {
-        // Validate username length
-        if (trimmedUsername.length > 255) {
-          return res.status(400).json({ error: 'Username is too long (max 255 characters)' });
-        }
-        userData.username = trimmedUsername;
-      }
-      // If usernameColumnExists is false, we simply don't add username to userData
-      
-      // Create user - if username column doesn't exist, it will be ignored
-      const createdUser = await prisma.user.create({
-        data: userData,
-      });
-      
-      // Fetch user - only select fields that definitely exist
-      const userId = createdUser.id;
+    
+    if (!usernameColumnExists) {
+      // Use raw SQL to create user without username column
       try {
+        // Generate a CUID-like ID or use gen_random_uuid
+        const userId = `cuid_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+        
+        await prisma.$executeRaw`
+          INSERT INTO "User" (id, email, password, role, "createdAt")
+          VALUES (${userId}, ${trimmedEmail}, ${hashedPassword}, ${validRole}, NOW())
+        `;
+        
+        // Fetch user using raw SQL
+        const fetchResult = await prisma.$queryRaw<Array<{id: string; email: string; role: string; createdAt: string}>>`
+          SELECT id, email, role, "createdAt"
+          FROM "User"
+          WHERE id = ${userId}
+        `;
+        
+        if (fetchResult[0]) {
+          user = {
+            id: fetchResult[0].id,
+            email: fetchResult[0].email,
+            role: fetchResult[0].role,
+            createdAt: new Date(fetchResult[0].createdAt),
+            username: null,
+          };
+        } else {
+          throw new Error('Failed to fetch created user');
+        }
+      } catch (sqlError: any) {
+        console.error('Raw SQL user creation failed:', sqlError);
+        throw sqlError;
+      }
+    } else {
+      // Username column exists, use Prisma normally
+      try {
+        // Build user data object
+        const userData: any = {
+          email: trimmedEmail,
+          password: hashedPassword,
+          role: validRole,
+        };
+        
+        // Add username if provided
+        if (trimmedUsername && trimmedUsername.length > 0) {
+          if (trimmedUsername.length > 255) {
+            return res.status(400).json({ error: 'Username is too long (max 255 characters)' });
+          }
+          userData.username = trimmedUsername;
+        }
+        
+        // Create user
+        const createdUser = await prisma.user.create({
+          data: userData,
+        });
+        
+        // Fetch user with selected fields
         user = await prisma.user.findUnique({
-          where: { id: userId },
+          where: { id: createdUser.id },
           select: {
             id: true,
             email: true,
             role: true,
             createdAt: true,
-            ...(usernameColumnExists ? { username: true } : {}),
+            username: true,
           },
         });
-      } catch (fetchError: any) {
-        // If fetch fails due to username, try without it
-        if (fetchError.message?.includes('username')) {
-          user = await prisma.user.findUnique({
-            where: { id: userId },
-            select: {
-              id: true,
-              email: true,
-              role: true,
-              createdAt: true,
-            },
-          });
-        } else {
-          throw fetchError;
+        
+        if (!user) {
+          throw new Error('Failed to fetch created user');
         }
-      }
-      
-      // Add username to response (for frontend compatibility)
-      if (!user) {
-        throw new Error('Failed to fetch created user');
-      }
-      (user as any).username = (usernameColumnExists && trimmedUsername) ? trimmedUsername : null;
-    } catch (createError: any) {
-      // If username column doesn't exist yet (migration not run), try without it
-      if (createError.code === 'P2011' || 
-          createError.message?.includes('Unknown column') || 
-          (createError.message?.includes('username') && createError.message?.includes('does not exist')) ||
-          (createError.message?.includes('column') && createError.message?.includes('username'))) {
-        console.warn('Username column does not exist, creating user without username');
-        try {
-          // Remove username from userData
-          const userDataWithoutUsername: any = {
-            email: trimmedEmail,
-            password: hashedPassword,
-            role: validRole,
-          };
-          
-          const createdUserWithoutUsername = await prisma.user.create({
-            data: userDataWithoutUsername,
-          });
-          
-          // Fetch user without username field
-          user = await prisma.user.findUnique({
-            where: { id: createdUserWithoutUsername.id },
-            select: {
-              id: true,
-              email: true,
-              role: true,
-              createdAt: true,
-            },
-          });
-          
-          // Add username to response manually (for frontend)
-          if (!user) {
-            throw new Error('Failed to fetch created user');
-          }
-          (user as any).username = null; // Column doesn't exist, so username is null
-        } catch (fallbackError: any) {
-          console.error('Fallback user creation also failed:', fallbackError);
-          throw fallbackError;
-        }
-      } else {
+      } catch (createError: any) {
+        console.error('Prisma user creation failed:', createError);
         throw createError;
       }
     }
@@ -308,16 +293,60 @@ router.post('/login', async (req: Request, res: Response) => {
 
     const prisma = getPrismaClient();
 
+    // Check if username column exists
+    let usernameColumnExists = false;
+    try {
+      const result = await prisma.$queryRaw<Array<{column_name: string}>>`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' AND table_name = 'User' AND column_name = 'username'
+      `;
+      usernameColumnExists = result.length > 0;
+    } catch (checkError: any) {
+      usernameColumnExists = false;
+    }
+
     // Find user by email or username
-    let user = null;
+    let user: any = null;
     if (email) {
-      user = await prisma.user.findUnique({
-        where: { email },
-      });
-    } else if (username) {
-      user = await prisma.user.findFirst({
-        where: { username },
-      });
+      if (usernameColumnExists) {
+        user = await prisma.user.findUnique({
+          where: { email },
+        });
+      } else {
+        // Use raw SQL if username column doesn't exist
+        const result = await prisma.$queryRaw<Array<{id: string; email: string; role: string; password: string | null; createdAt: string}>>`
+          SELECT id, email, role, password, "createdAt"
+          FROM "User"
+          WHERE email = ${email}
+          LIMIT 1
+        `;
+        if (result[0]) {
+          user = {
+            id: result[0].id,
+            email: result[0].email,
+            role: result[0].role,
+            password: result[0].password,
+            createdAt: new Date(result[0].createdAt),
+            username: null,
+          };
+        }
+      }
+    } else if (username && usernameColumnExists) {
+      // Only try username lookup if column exists
+      try {
+        user = await prisma.user.findFirst({
+          where: { username },
+        });
+      } catch (usernameError: any) {
+        if (usernameError.message?.includes('username') && usernameError.message?.includes('does not exist')) {
+          return res.status(401).json({ error: 'User not found' });
+        }
+        throw usernameError;
+      }
+    } else if (username && !usernameColumnExists) {
+      // Username column doesn't exist, can't search by username
+      return res.status(401).json({ error: 'User not found' });
     }
 
     if (!user) {
@@ -327,15 +356,19 @@ router.post('/login', async (req: Request, res: Response) => {
     // For testing: if no password provided, allow login anyway
     // If password provided, validate it
     if (password) {
-      // Fetch user with password field to check
-      const userWithPassword = await prisma.user.findUnique({
-        where: { id: user.id },
-        select: { password: true },
-      });
+      // Check password (already fetched in raw SQL or need to fetch)
+      let userPassword = user.password;
+      if (!userPassword && usernameColumnExists) {
+        const userWithPassword = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { password: true },
+        });
+        userPassword = userWithPassword?.password || null;
+      }
       
-      if (userWithPassword?.password) {
+      if (userPassword) {
         const hashedPassword = hashPassword(password);
-        if (userWithPassword.password !== hashedPassword) {
+        if (userPassword !== hashedPassword) {
           return res.status(401).json({ error: 'Invalid password' });
         }
       }
