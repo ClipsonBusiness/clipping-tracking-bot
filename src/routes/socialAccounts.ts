@@ -71,24 +71,68 @@ router.post('/youtube', async (req: Request, res: Response) => {
     }
 
     // Ensure user exists (create if doesn't exist)
+    const prisma = getPrismaClient();
+    
+    // Check which columns exist
+    let usernameColumnExists: boolean = false;
+    let passwordColumnExists: boolean = false;
+    try {
+      const columns = await prisma.$queryRaw<Array<{column_name: string}>>`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' AND table_name = 'User' 
+        AND column_name IN ('username', 'password')
+      `;
+      usernameColumnExists = columns.some(c => c.column_name === 'username');
+      passwordColumnExists = columns.some(c => c.column_name === 'password');
+    } catch (checkError: any) {
+      usernameColumnExists = false;
+      passwordColumnExists = false;
+    }
+    
     let user;
     try {
-      user = await getPrismaClient().user.findUnique({
-        where: { id: userId },
-      });
+      if (usernameColumnExists && passwordColumnExists) {
+        user = await prisma.user.findUnique({
+          where: { id: userId },
+        });
+      } else {
+        // Use raw SQL if columns don't exist
+        const result = await prisma.$queryRawUnsafe<Array<{id: string; email: string; role: string}>>(
+          `SELECT id, email, role FROM "User" WHERE id = $1 LIMIT 1`,
+          userId
+        );
+        user = result[0] || null;
+      }
       
       if (!user) {
         // Create user if doesn't exist
-        // Generate username from userId
-        const generatedUsername = `user_${userId.substring(0, 15)}_${Date.now().toString().slice(-6)}`;
-        user = await getPrismaClient().user.create({
-          data: {
-            id: userId,
-            email: `${userId}@example.com`, // Placeholder email
-            username: generatedUsername,
-            role: 'CLIPPER',
-          },
-        });
+        if (!usernameColumnExists || !passwordColumnExists) {
+          // Use raw SQL to create user
+          const email = `${userId}@example.com`;
+          await prisma.$executeRaw`
+            INSERT INTO "User" (id, email, role, "createdAt")
+            VALUES (${userId}, ${email}, 'CLIPPER', NOW())
+            ON CONFLICT (id) DO NOTHING
+          `;
+          // Fetch the created user
+          const result = await prisma.$queryRawUnsafe<Array<{id: string; email: string; role: string}>>(
+            `SELECT id, email, role FROM "User" WHERE id = $1 LIMIT 1`,
+            userId
+          );
+          user = result[0] || null;
+        } else {
+          // Use Prisma to create user
+          const generatedUsername = `user_${userId.substring(0, 15)}_${Date.now().toString().slice(-6)}`;
+          user = await prisma.user.create({
+            data: {
+              id: userId,
+              email: `${userId}@example.com`,
+              username: generatedUsername,
+              role: 'CLIPPER',
+            },
+          });
+        }
       }
     } catch (dbError: any) {
       if (dbError.code === 'P1001' || dbError.message?.includes('DATABASE_URL')) {
@@ -242,20 +286,66 @@ router.post('/tiktok', async (req: Request, res: Response) => {
     }
 
     // Ensure user exists
+    const prisma = getPrismaClient();
+    
+    // Check which columns exist
+    let usernameColumnExists: boolean = false;
+    let passwordColumnExists: boolean = false;
+    try {
+      const columns = await prisma.$queryRaw<Array<{column_name: string}>>`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' AND table_name = 'User' 
+        AND column_name IN ('username', 'password')
+      `;
+      usernameColumnExists = columns.some(c => c.column_name === 'username');
+      passwordColumnExists = columns.some(c => c.column_name === 'password');
+    } catch (checkError: any) {
+      usernameColumnExists = false;
+      passwordColumnExists = false;
+    }
+    
     let user;
     try {
-      user = await getPrismaClient().user.findUnique({
-        where: { id: userId },
-      });
+      if (usernameColumnExists && passwordColumnExists) {
+        user = await prisma.user.findUnique({
+          where: { id: userId },
+        });
+      } else {
+        // Use raw SQL if columns don't exist
+        const result = await prisma.$queryRawUnsafe<Array<{id: string; email: string; role: string}>>(
+          `SELECT id, email, role FROM "User" WHERE id = $1 LIMIT 1`,
+          userId
+        );
+        user = result[0] || null;
+      }
       
       if (!user) {
-        user = await getPrismaClient().user.create({
-          data: {
-            id: userId,
-            email: `${userId}@example.com`,
-            role: 'CLIPPER',
-          },
-        });
+        // Create user if doesn't exist
+        if (!usernameColumnExists || !passwordColumnExists) {
+          // Use raw SQL to create user
+          const email = `${userId}@example.com`;
+          await prisma.$executeRaw`
+            INSERT INTO "User" (id, email, role, "createdAt")
+            VALUES (${userId}, ${email}, 'CLIPPER', NOW())
+            ON CONFLICT (id) DO NOTHING
+          `;
+          // Fetch the created user
+          const result = await prisma.$queryRawUnsafe<Array<{id: string; email: string; role: string}>>(
+            `SELECT id, email, role FROM "User" WHERE id = $1 LIMIT 1`,
+            userId
+          );
+          user = result[0] || null;
+        } else {
+          // Use Prisma to create user
+          user = await prisma.user.create({
+            data: {
+              id: userId,
+              email: `${userId}@example.com`,
+              role: 'CLIPPER',
+            },
+          });
+        }
       }
     } catch (dbError: any) {
       if (dbError.code === 'P1001' || dbError.message?.includes('DATABASE_URL')) {
@@ -358,20 +448,66 @@ router.post('/instagram', async (req: Request, res: Response) => {
     }
 
     // Ensure user exists
+    const prisma = getPrismaClient();
+    
+    // Check which columns exist
+    let usernameColumnExists: boolean = false;
+    let passwordColumnExists: boolean = false;
+    try {
+      const columns = await prisma.$queryRaw<Array<{column_name: string}>>`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' AND table_name = 'User' 
+        AND column_name IN ('username', 'password')
+      `;
+      usernameColumnExists = columns.some(c => c.column_name === 'username');
+      passwordColumnExists = columns.some(c => c.column_name === 'password');
+    } catch (checkError: any) {
+      usernameColumnExists = false;
+      passwordColumnExists = false;
+    }
+    
     let user;
     try {
-      user = await getPrismaClient().user.findUnique({
-        where: { id: userId },
-      });
+      if (usernameColumnExists && passwordColumnExists) {
+        user = await prisma.user.findUnique({
+          where: { id: userId },
+        });
+      } else {
+        // Use raw SQL if columns don't exist
+        const result = await prisma.$queryRawUnsafe<Array<{id: string; email: string; role: string}>>(
+          `SELECT id, email, role FROM "User" WHERE id = $1 LIMIT 1`,
+          userId
+        );
+        user = result[0] || null;
+      }
       
       if (!user) {
-        user = await getPrismaClient().user.create({
-          data: {
-            id: userId,
-            email: `${userId}@example.com`,
-            role: 'CLIPPER',
-          },
-        });
+        // Create user if doesn't exist
+        if (!usernameColumnExists || !passwordColumnExists) {
+          // Use raw SQL to create user
+          const email = `${userId}@example.com`;
+          await prisma.$executeRaw`
+            INSERT INTO "User" (id, email, role, "createdAt")
+            VALUES (${userId}, ${email}, 'CLIPPER', NOW())
+            ON CONFLICT (id) DO NOTHING
+          `;
+          // Fetch the created user
+          const result = await prisma.$queryRawUnsafe<Array<{id: string; email: string; role: string}>>(
+            `SELECT id, email, role FROM "User" WHERE id = $1 LIMIT 1`,
+            userId
+          );
+          user = result[0] || null;
+        } else {
+          // Use Prisma to create user
+          user = await prisma.user.create({
+            data: {
+              id: userId,
+              email: `${userId}@example.com`,
+              role: 'CLIPPER',
+            },
+          });
+        }
       }
     } catch (dbError: any) {
       if (dbError.code === 'P1001' || dbError.message?.includes('DATABASE_URL')) {
