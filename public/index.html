@@ -943,7 +943,20 @@
             if (token) {
                 headers['Authorization'] = `Bearer ${token}`;
             } else {
-                // Fallback to test user for backwards compatibility
+                // Check if user is logged in
+                const user = localStorage.getItem('user');
+                if (!user) {
+                    responseEl.innerHTML = `
+                        <div style="padding: 15px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; color: #92400e;">
+                            <strong>⚠️ Please login first!</strong><br>
+                            You need to be logged in to verify social accounts.<br>
+                            <a href="/login.html" style="color: #667eea; text-decoration: underline; margin-top: 8px; display: inline-block;">Go to Login Page</a>
+                        </div>
+                    `;
+                    responseEl.className = 'response show error';
+                    return;
+                }
+                // Fallback to test user for backwards compatibility (shouldn't happen if logged in)
                 headers['x-user-id'] = 'test-user-123';
                 headers['x-user-role'] = 'CLIPPER';
             }
@@ -1040,6 +1053,18 @@
             if (token) {
                 headers['Authorization'] = `Bearer ${token}`;
             } else {
+                // Check if user is logged in
+                const user = localStorage.getItem('user');
+                if (!user) {
+                    listEl.innerHTML = `
+                        <div style="padding: 15px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; color: #92400e;">
+                            <strong>⚠️ Please login first!</strong><br>
+                            You need to be logged in to view your social accounts.<br>
+                            <a href="/login.html" style="color: #667eea; text-decoration: underline; margin-top: 8px; display: inline-block;">Go to Login Page</a>
+                        </div>
+                    `;
+                    return;
+                }
                 // Fallback to test user for backwards compatibility
                 headers['x-user-id'] = 'test-user-123';
                 headers['x-user-role'] = 'CLIPPER';
@@ -1110,6 +1135,19 @@
             if (token) {
                 headers['Authorization'] = `Bearer ${token}`;
             } else {
+                // Check if user is logged in
+                const user = localStorage.getItem('user');
+                if (!user) {
+                    responseEl.innerHTML = `
+                        <div style="padding: 15px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; color: #92400e;">
+                            <strong>⚠️ Please login first!</strong><br>
+                            You need to be logged in to verify social accounts.<br>
+                            <a href="/login.html" style="color: #667eea; text-decoration: underline; margin-top: 8px; display: inline-block;">Go to Login Page</a>
+                        </div>
+                    `;
+                    responseEl.className = 'response show error';
+                    return;
+                }
                 // Fallback to test user for backwards compatibility
                 headers['x-user-id'] = 'test-user-123';
                 headers['x-user-role'] = 'CLIPPER';
