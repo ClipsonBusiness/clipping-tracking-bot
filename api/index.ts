@@ -42,14 +42,9 @@ app.get('/', (req, res) => {
 // Export as Vercel serverless function
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
-    // Ensure DATABASE_URL is available (Vercel should provide it)
-    if (!process.env.DATABASE_URL) {
-      console.error('DATABASE_URL is not set in environment variables');
-      return res.status(500).json({ 
-        error: 'Server configuration error',
-        message: 'DATABASE_URL environment variable is not configured'
-      });
-    }
+    // Note: DATABASE_URL check is handled lazily in getPrismaClient()
+    // This allows the app to start even if DATABASE_URL is not set initially
+    // Database operations will fail gracefully with appropriate error messages
     
     return app(req, res);
   } catch (error: any) {
