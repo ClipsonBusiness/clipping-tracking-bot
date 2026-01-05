@@ -87,10 +87,10 @@ router.post('/register', async (req: Request, res: Response) => {
     }
 
     // Check username uniqueness if provided (only if column exists)
-    if (username && username.trim()) {
+    if (trimmedUsername && trimmedUsername.length > 0) {
       try {
         const existingUsername = await prisma.user.findFirst({
-          where: { username: username.trim() },
+          where: { username: trimmedUsername },
         });
 
         if (existingUsername) {
@@ -98,9 +98,13 @@ router.post('/register', async (req: Request, res: Response) => {
         }
       } catch (usernameCheckError: any) {
         // If username column doesn't exist, skip uniqueness check
-        if (usernameCheckError.message?.includes('username') && usernameCheckError.message?.includes('does not exist')) {
+        if (usernameCheckError.message?.includes('username') && 
+            (usernameCheckError.message?.includes('does not exist') || 
+             usernameCheckError.message?.includes('Unknown column'))) {
           console.warn('Username column does not exist, skipping uniqueness check');
+          // Continue without username uniqueness check
         } else {
+          // Re-throw if it's a different error
           throw usernameCheckError;
         }
       }
