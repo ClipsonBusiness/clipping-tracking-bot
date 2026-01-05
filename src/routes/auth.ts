@@ -227,13 +227,16 @@ router.post('/register', async (req: Request, res: Response) => {
       throw new Error('Failed to create user');
     }
 
+    // TypeScript guard: user is definitely not null here
+    const finalUser = user as { id: string; email: string; role: string; username?: string | null; createdAt: Date };
+
     // Create session
     const token = generateToken();
     const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
-    sessions.set(token, { userId: user.id, role: user.role, expiresAt });
+    sessions.set(token, { userId: finalUser.id, role: finalUser.role, expiresAt });
 
     res.status(201).json({
-      user,
+      user: finalUser,
       token,
       message: 'User registered successfully',
     });
