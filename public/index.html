@@ -1316,6 +1316,13 @@
         }
 
 
+        // Check auth status on page load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', checkAuthStatus);
+        } else {
+            checkAuthStatus();
+        }
+        
         // Update URL count as user types
         document.addEventListener('DOMContentLoaded', function() {
             const batchUrlsEl = document.getElementById('batch-urls');
