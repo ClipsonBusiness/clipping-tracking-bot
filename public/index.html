@@ -1339,6 +1339,9 @@
                     }
                 } else if (response.status === 403) {
                     if (data.error === 'AUTHOR_MISMATCH') {
+                        // Generate timestamp ONCE before creating HTML
+                        const buttonTimestamp = `btn-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                        
                         // Create a wrapper div since <pre> doesn't support HTML well
                         const wrapperDiv = document.createElement('div');
                         wrapperDiv.style.cssText = 'white-space: normal;';
@@ -1389,7 +1392,7 @@
                                     <li>Try submitting again</li>
                                 </ol>
                             </div>
-                            <button class="goto-verification-btn-${Date.now()}" style="
+                            <button id="goto-verification-${buttonTimestamp}" style="
                                 background: #667eea;
                                 color: white;
                                 border: none;
@@ -1402,7 +1405,7 @@
                             ">
                                 🔗 Go to Verification
                             </button>
-                            <button class="show-accounts-btn-${Date.now()}" style="
+                            <button id="show-accounts-${buttonTimestamp}" style="
                                 background: #6b7280;
                                 color: white;
                                 border: none;
@@ -1423,13 +1426,15 @@
                         responseEl.appendChild(wrapperDiv);
                         responseEl.className = 'response show error';
                         
-                        // Add event listeners to buttons using class selectors
-                        const timestamp = Date.now();
-                        const gotoBtn = errorDiv.querySelector(`.goto-verification-btn-${timestamp}`);
-                        const showBtn = errorDiv.querySelector(`.show-accounts-btn-${timestamp}`);
+                        // Add event listeners to buttons using IDs (more reliable than classes)
+                        const gotoBtn = document.getElementById(`goto-verification-${buttonTimestamp}`);
+                        const showBtn = document.getElementById(`show-accounts-${buttonTimestamp}`);
                         
                         if (gotoBtn) {
-                            gotoBtn.addEventListener('click', function() {
+                            gotoBtn.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log('Go to Verification button clicked');
                                 const platformSelect = document.getElementById('social-platform');
                                 const handleInput = document.getElementById('social-handle');
                                 if (platformSelect) {
@@ -1453,10 +1458,15 @@
                                     }
                                 }, 300);
                             });
+                        } else {
+                            console.error('Go to Verification button not found');
                         }
                         
                         if (showBtn) {
-                            showBtn.addEventListener('click', function() {
+                            showBtn.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log('Show My Accounts button clicked');
                                 loadMyAccounts();
                                 const sections = document.querySelectorAll('.section');
                                 let socialSection = null;
@@ -1470,6 +1480,8 @@
                                     socialSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                 }
                             });
+                        } else {
+                            console.error('Show My Accounts button not found');
                         }
                     } else {
                         output += `\n\n⚠️ Author mismatch. Make sure the content is from your verified ${detectedPlatform} account.`;
