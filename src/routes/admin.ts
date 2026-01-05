@@ -182,6 +182,9 @@ router.get('/submissions', async (req: Request, res: Response) => {
         ? (engagement / submission.latestViews) * 100 
         : 0;
 
+      // Safely access campaign with type assertion
+      const campaignData = (submission as any).campaign as { id: string; name: string } | null;
+
       return {
         id: submission.id,
         platform: submission.platform,
@@ -189,9 +192,9 @@ router.get('/submissions', async (req: Request, res: Response) => {
         creatorId: submission.userId,
         creatorEmail: submission.user.email,
         creatorHandle,
-        campaign: submission.campaign ? {
-          id: submission.campaign.id,
-          name: submission.campaign.name,
+        campaign: campaignData ? {
+          id: campaignData.id,
+          name: campaignData.name,
         } : null,
         canonicalUrl: submission.canonicalUrl || '',
         thumbnailUrl: null, // Not in schema, return null
