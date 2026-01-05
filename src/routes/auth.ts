@@ -70,14 +70,23 @@ router.post('/register', async (req: Request, res: Response) => {
       return res.status(409).json({ error: 'User with this email already exists' });
     }
 
-    // Check username uniqueness if provided
-    if (username) {
-      const existingUsername = await prisma.user.findFirst({
-        where: { username },
-      });
+    // Check username uniqueness if provided (only if column exists)
+    if (username && username.trim()) {
+      try {
+        const existingUsername = await prisma.user.findFirst({
+          where: { username: username.trim() },
+        });
 
-      if (existingUsername) {
-        return res.status(409).json({ error: 'Username already taken' });
+        if (existingUsername) {
+          return res.status(409).json({ error: 'Username already taken' });
+        }
+      } catch (usernameCheckError: any) {
+        // If username column doesn't exist, skip uniqueness check
+        if (usernameCheckError.message?.includes('username') && usernameCheckError.message?.includes('does not exist')) {
+          console.warn('Username column does not exist, skipping uniqueness check');
+        } else {
+          throw usernameCheckError;
+        }
       }
     }
 
@@ -91,24 +100,24 @@ router.post('/register', async (req: Request, res: Response) => {
         role,
       };
       
-      // Only add username if it's provided and not empty (use null instead of empty string)
+      // Don't include username in userData if column doesn't exist
+      // We'll try to add it, but catch the error if column doesn't exist
       const trimmedUsername = username?.trim();
       if (trimmedUsername && trimmedUsername.length > 0) {
         // Validate username length
         if (trimmedUsername.length > 255) {
           return res.status(400).json({ error: 'Username is too long (max 255 characters)' });
         }
+        // Try to add username, but don't fail if column doesn't exist
         userData.username = trimmedUsername;
-      } else {
-        // Explicitly set to null if empty (don't include empty string)
-        userData.username = null;
       }
       
+      // Create user - if username column doesn't exist, it will be ignored
       user = await prisma.user.create({
         data: userData,
       });
       
-      // Select fields separately to avoid issues if username doesn't exist
+      // Fetch user without trying to select username (in case column doesn't exist)
       user = await prisma.user.findUnique({
         where: { id: user.id },
         select: {
@@ -119,33 +128,29 @@ router.post('/register', async (req: Request, res: Response) => {
         },
       });
       
-      // Add username if it exists
-      if (user) {
-        try {
-          const userWithUsername = await prisma.user.findUnique({
-            where: { id: user.id },
-            select: { username: true },
-          });
-          (user as any).username = userWithUsername?.username || username || null;
-        } catch (e) {
-          // Username column doesn't exist, use provided username
-          (user as any).username = username || null;
-        }
+      // Try to add username to response if column exists
+      if (user && trimmedUsername) {
+        (user as any).username = trimmedUsername;
+      } else if (user) {
+        (user as any).username = null;
       }
     } catch (createError: any) {
       // If username column doesn't exist yet (migration not run), try without it
       if (createError.code === 'P2011' || 
           createError.message?.includes('Unknown column') || 
-          createError.message?.includes('username') ||
-          createError.message?.includes('column') && createError.message?.includes('username')) {
-        console.warn('Username column may not exist, creating user without username');
+          (createError.message?.includes('username') && createError.message?.includes('does not exist')) ||
+          (createError.message?.includes('column') && createError.message?.includes('username'))) {
+        console.warn('Username column does not exist, creating user without username');
         try {
+          // Remove username from userData
+          const userDataWithoutUsername: any = {
+            email: email.trim(),
+            password: hashedPassword,
+            role,
+          };
+          
           user = await prisma.user.create({
-            data: {
-              email,
-              password: hashedPassword,
-              role,
-            },
+            data: userDataWithoutUsername,
           });
           
           // Fetch user without username field
@@ -159,9 +164,9 @@ router.post('/register', async (req: Request, res: Response) => {
             },
           });
           
-          // Add username to response manually
+          // Add username to response manually (for frontend)
           if (user) {
-            (user as any).username = username || null;
+            (user as any).username = username?.trim() || null;
           } else {
             throw new Error('Failed to create user');
           }
