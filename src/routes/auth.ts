@@ -119,7 +119,7 @@ router.post('/register', async (req: Request, res: Response) => {
     }
 
     // Create user
-    let user: any = null;
+    let user: { id: string; email: string; role: string; username?: string | null; createdAt: Date } | null = null;
     try {
       // Build user data object
       const userData: any = {
@@ -227,8 +227,8 @@ router.post('/register', async (req: Request, res: Response) => {
       throw new Error('Failed to create user');
     }
 
-    // TypeScript guard: user is definitely not null here
-    const finalUser = user as { id: string; email: string; role: string; username?: string | null; createdAt: Date };
+    // TypeScript guard: user is definitely not null here (narrowed by the check above)
+    const finalUser: { id: string; email: string; role: string; username?: string | null; createdAt: Date } = user;
 
     // Create session
     const token = generateToken();
