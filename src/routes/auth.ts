@@ -119,7 +119,7 @@ router.post('/register', async (req: Request, res: Response) => {
     }
 
     // Create user
-    let user;
+    let user: any = null;
     try {
       // Build user data object
       const userData: any = {
@@ -139,12 +139,12 @@ router.post('/register', async (req: Request, res: Response) => {
       // If usernameColumnExists is false, we simply don't add username to userData
       
       // Create user - if username column doesn't exist, it will be ignored
-      user = await prisma.user.create({
+      const createdUser = await prisma.user.create({
         data: userData,
       });
       
       // Fetch user - only select fields that definitely exist
-      const userId = user.id;
+      const userId = createdUser.id;
       try {
         user = await prisma.user.findUnique({
           where: { id: userId },
@@ -174,11 +174,10 @@ router.post('/register', async (req: Request, res: Response) => {
       }
       
       // Add username to response (for frontend compatibility)
-      if (user) {
-        (user as any).username = (usernameColumnExists && trimmedUsername) ? trimmedUsername : null;
-      } else {
+      if (!user) {
         throw new Error('Failed to fetch created user');
       }
+      (user as any).username = (usernameColumnExists && trimmedUsername) ? trimmedUsername : null;
     } catch (createError: any) {
       // If username column doesn't exist yet (migration not run), try without it
       if (createError.code === 'P2011' || 
