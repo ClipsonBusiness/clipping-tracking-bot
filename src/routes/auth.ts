@@ -86,9 +86,19 @@ router.post('/register', async (req: Request, res: Response) => {
       return res.status(409).json({ error: 'User with this email already exists' });
     }
 
-    // Check username uniqueness if provided (only if column exists)
+    // Check username uniqueness if provided (skip if column doesn't exist)
+    // We'll detect if username column exists by trying a simple query first
+    let usernameColumnExists = false;
     if (trimmedUsername && trimmedUsername.length > 0) {
       try {
+        // Try to query username to see if column exists
+        await prisma.user.findFirst({
+          where: { username: trimmedUsername },
+          select: { id: true },
+        });
+        usernameColumnExists = true;
+        
+        // If we got here, column exists, so check uniqueness
         const existingUsername = await prisma.user.findFirst({
           where: { username: trimmedUsername },
         });
@@ -101,8 +111,9 @@ router.post('/register', async (req: Request, res: Response) => {
         if (usernameCheckError.message?.includes('username') && 
             (usernameCheckError.message?.includes('does not exist') || 
              usernameCheckError.message?.includes('Unknown column'))) {
-          console.warn('Username column does not exist, skipping uniqueness check');
-          // Continue without username uniqueness check
+          console.warn('Username column does not exist, skipping username validation');
+          usernameColumnExists = false;
+          // Continue without username - we'll create user without it
         } else {
           // Re-throw if it's a different error
           throw usernameCheckError;
@@ -120,15 +131,15 @@ router.post('/register', async (req: Request, res: Response) => {
         role: validRole,
       };
       
-      // Only add username if it's valid and not empty
-      if (trimmedUsername && trimmedUsername.length > 0) {
+      // Only add username if column exists and username is valid
+      if (usernameColumnExists && trimmedUsername && trimmedUsername.length > 0) {
         // Validate username length
         if (trimmedUsername.length > 255) {
           return res.status(400).json({ error: 'Username is too long (max 255 characters)' });
         }
-        // Try to add username, but don't fail if column doesn't exist
         userData.username = trimmedUsername;
       }
+      // If usernameColumnExists is false, we simply don't add username to userData
       
       // Create user - if username column doesn't exist, it will be ignored
       user = await prisma.user.create({
