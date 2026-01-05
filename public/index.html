@@ -1444,10 +1444,15 @@
                     }
                 } else if (response.status === 409) {
                     output += '\n\nℹ️ This content has already been submitted.';
+                    responseEl.textContent = output;
+                    responseEl.className = response.ok ? 'response show' : 'response show error';
+                } else {
+                    // Only set textContent if we haven't already set innerHTML (for AUTHOR_MISMATCH)
+                    if (responseEl.innerHTML === '' || !responseEl.querySelector('button')) {
+                        responseEl.textContent = output;
+                        responseEl.className = response.ok ? 'response show' : 'response show error';
+                    }
                 }
-                
-                responseEl.textContent = output;
-                responseEl.className = response.ok ? 'response show' : 'response show error';
             } catch (error) {
                 responseEl.textContent = `Error: ${error.message}`;
                 responseEl.className = 'response show error';
