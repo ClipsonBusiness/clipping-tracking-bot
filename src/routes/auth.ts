@@ -321,17 +321,21 @@ router.post('/login', async (req: Request, res: Response) => {
 
     const prisma = getPrismaClient();
 
-    // Check if username column exists
+    // Check which columns exist in the User table
     let usernameColumnExists = false;
+    let passwordColumnExists = false;
     try {
-      const result = await prisma.$queryRaw<Array<{column_name: string}>>`
+      const columns = await prisma.$queryRaw<Array<{column_name: string}>>`
         SELECT column_name 
         FROM information_schema.columns 
-        WHERE table_schema = 'public' AND table_name = 'User' AND column_name = 'username'
+        WHERE table_schema = 'public' AND table_name = 'User' 
+        AND column_name IN ('username', 'password')
       `;
-      usernameColumnExists = result.length > 0;
+      usernameColumnExists = columns.some(c => c.column_name === 'username');
+      passwordColumnExists = columns.some(c => c.column_name === 'password');
     } catch (checkError: any) {
       usernameColumnExists = false;
+      passwordColumnExists = false;
     }
 
     // Find user by email or username
