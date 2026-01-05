@@ -154,6 +154,8 @@ router.post('/register', async (req: Request, res: Response) => {
           // Add username to response manually
           if (user) {
             (user as any).username = username || null;
+          } else {
+            throw new Error('Failed to create user');
           }
         } catch (fallbackError: any) {
           console.error('Fallback user creation also failed:', fallbackError);
@@ -162,6 +164,11 @@ router.post('/register', async (req: Request, res: Response) => {
       } else {
         throw createError;
       }
+    }
+
+    // Ensure user was created
+    if (!user) {
+      throw new Error('Failed to create user');
     }
 
     // Create session
