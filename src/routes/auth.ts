@@ -98,33 +98,67 @@ router.post('/register', async (req: Request, res: Response) => {
       
       user = await prisma.user.create({
         data: userData,
+      });
+      
+      // Select fields separately to avoid issues if username doesn't exist
+      user = await prisma.user.findUnique({
+        where: { id: user.id },
         select: {
           id: true,
           email: true,
-          username: true,
           role: true,
           createdAt: true,
         },
       });
+      
+      // Add username if it exists
+      if (user) {
+        try {
+          const userWithUsername = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: { username: true },
+          });
+          (user as any).username = userWithUsername?.username || username || null;
+        } catch (e) {
+          // Username column doesn't exist, use provided username
+          (user as any).username = username || null;
+        }
+      }
     } catch (createError: any) {
       // If username column doesn't exist yet (migration not run), try without it
-      if (createError.code === 'P2011' || createError.message?.includes('Unknown column') || createError.message?.includes('username')) {
+      if (createError.code === 'P2011' || 
+          createError.message?.includes('Unknown column') || 
+          createError.message?.includes('username') ||
+          createError.message?.includes('column') && createError.message?.includes('username')) {
         console.warn('Username column may not exist, creating user without username');
-        user = await prisma.user.create({
-          data: {
-            email,
-            password: hashedPassword,
-            role,
-          },
-          select: {
-            id: true,
-            email: true,
-            role: true,
-            createdAt: true,
-          },
-        });
-        // Add username to response manually
-        (user as any).username = username || null;
+        try {
+          user = await prisma.user.create({
+            data: {
+              email,
+              password: hashedPassword,
+              role,
+            },
+          });
+          
+          // Fetch user without username field
+          user = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: {
+              id: true,
+              email: true,
+              role: true,
+              createdAt: true,
+            },
+          });
+          
+          // Add username to response manually
+          if (user) {
+            (user as any).username = username || null;
+          }
+        } catch (fallbackError: any) {
+          console.error('Fallback user creation also failed:', fallbackError);
+          throw fallbackError;
+        }
       } else {
         throw createError;
       }
