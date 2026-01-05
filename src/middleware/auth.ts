@@ -6,9 +6,20 @@ let sessions: Map<string, { userId: string; role: string; expiresAt: number }> |
 function getSessions() {
   if (!sessions) {
     try {
+      // Use require to get the actual sessions map instance
+      delete require.cache[require.resolve('../routes/auth')];
       const authModule = require('../routes/auth');
       sessions = authModule.sessions;
+      
+      // Verify we got the sessions map
+      if (!sessions || !(sessions instanceof Map)) {
+        console.warn('[Auth Middleware] Sessions map not found or invalid, creating new map');
+        sessions = new Map();
+      } else {
+        console.log('[Auth Middleware] Successfully loaded sessions map, size:', sessions.size);
+      }
     } catch (e) {
+      console.error('[Auth Middleware] Error loading sessions:', e);
       // If auth routes not loaded yet, create empty map
       sessions = new Map();
     }
