@@ -1328,13 +1328,25 @@
                     if (data.error === 'AUTHOR_MISMATCH') {
                         output += `\n\n⚠️ Author Mismatch Error\n`;
                         output += `\nThe video/post you're trying to submit is not from your verified ${detectedPlatform} account.\n`;
-                        output += `\nTo fix this:\n`;
-                        output += `1. Go to "Social Account Management" section above\n`;
-                        output += `2. Verify the ${detectedPlatform} account that owns this content\n`;
-                        output += `3. Make sure you're submitting content from that verified account\n`;
+                        output += `\n📋 What you need to do:\n`;
+                        output += `1. Scroll up to the "Social Account Management" section\n`;
+                        output += `2. Select "${detectedPlatform}" from the dropdown\n`;
+                        output += `3. Enter the ${detectedPlatform} handle/username that owns this video\n`;
+                        output += `4. Click "Verify Account" and follow the instructions\n`;
+                        output += `5. Once verified, try submitting this video again\n`;
                         if (data.authorChannelId || data.authorUserId) {
-                            output += `\nVideo/Post Author ID: ${data.authorChannelId || data.authorUserId}\n`;
-                            output += `This ID must match your verified account's platform user ID.\n`;
+                            output += `\n🔍 Video/Post Author ID: ${data.authorChannelId || data.authorUserId}\n`;
+                            output += `Your verified account's platform user ID must match this.\n`;
+                        }
+                        if (data.yourVerifiedAccounts && data.yourVerifiedAccounts.length > 0) {
+                            output += `\n✅ Your verified ${detectedPlatform} accounts:\n`;
+                            data.yourVerifiedAccounts.forEach((acc: any) => {
+                                output += `   - @${acc.handle} (ID: ${acc.platformUserId})\n`;
+                            });
+                            output += `\nNone of these match the video author. Verify the correct account.\n`;
+                        } else {
+                            output += `\n❌ You don't have any verified ${detectedPlatform} accounts yet.\n`;
+                            output += `Please verify your ${detectedPlatform} account first.\n`;
                         }
                     } else {
                         output += `\n\n⚠️ Author mismatch. Make sure the content is from your verified ${detectedPlatform} account.`;
