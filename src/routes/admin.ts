@@ -118,6 +118,7 @@ router.get('/submissions', async (req: Request, res: Response) => {
           select: {
             id: true,
             email: true,
+            username: true,
           },
         },
         campaign: {
