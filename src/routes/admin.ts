@@ -181,9 +181,9 @@ router.get('/submissions', async (req: Request, res: Response) => {
         creatorEmail: userData.email,
         creatorUsername: userData.username || null,
         creatorHandle,
-        campaign: campaignData ? {
-          id: campaignData.id,
-          name: campaignData.name,
+        campaign: submission.campaign ? {
+          id: (submission.campaign as { id: string; name: string }).id,
+          name: (submission.campaign as { id: string; name: string }).name,
         } : null,
         canonicalUrl: submission.canonicalUrl || '',
         thumbnailUrl: null, // Not in schema, return null
