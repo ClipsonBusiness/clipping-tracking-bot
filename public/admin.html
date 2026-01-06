@@ -949,10 +949,16 @@
             container.innerHTML = '<div class="submissions-grid">' +
                 submissions.map(submission => {
                     const statusClass = `status-${submission.status.toLowerCase()}`;
-                    const creatorHandle = submission.user?.socialAccounts?.find(a => a.platform === submission.platform)?.handle || 'N/A';
+                    const creatorHandle = submission.creatorHandle || 'N/A';
+                    const creatorUsername = submission.creatorUsername || submission.creatorEmail || 'Unknown';
                     
                     return `
                         <div class="submission-card">
+                            <div class="submission-header" style="background: #f3f4f6; padding: 12px; border-radius: 8px 8px 0 0; margin: -20px -20px 15px -20px; border-bottom: 2px solid #e5e7eb;">
+                                <div style="font-weight: 600; color: #333; font-size: 1.1em;">
+                                    👤 ${creatorUsername}
+                                </div>
+                            </div>
                             <div class="submission-info">
                                 <div class="submission-title">${submission.platform} Submission</div>
                                 <div class="submission-meta">

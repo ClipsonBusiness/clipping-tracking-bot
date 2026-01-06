@@ -191,6 +191,7 @@ router.get('/submissions', async (req: Request, res: Response) => {
         status: submission.status,
         creatorId: submission.userId,
         creatorEmail: submission.user.email,
+        creatorUsername: submission.user.username || null,
         creatorHandle,
         campaign: campaignData ? {
           id: campaignData.id,
