@@ -170,13 +170,16 @@ router.get('/submissions', async (req: Request, res: Response) => {
       // Safely access campaign with type assertion
       const campaignData = (submission as any).campaign as { id: string; name: string } | null;
 
+      // Safely access user data with type casting
+      const userData = submission.user as { id: string; email: string; username: string | null };
+      
       return {
         id: submission.id,
         platform: submission.platform,
         status: submission.status,
         creatorId: submission.userId,
-        creatorEmail: submission.user.email,
-        creatorUsername: submission.user.username || null,
+        creatorEmail: userData.email,
+        creatorUsername: userData.username || null,
         creatorHandle,
         campaign: campaignData ? {
           id: campaignData.id,
