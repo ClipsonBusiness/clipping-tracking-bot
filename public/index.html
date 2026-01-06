@@ -1348,41 +1348,34 @@
                 });
 
                 const data = await response.json();
-                let output = `Status: ${response.status} ${response.statusText}\n\n`;
-                output += JSON.stringify(data, null, 2);
                 
                 if (response.ok || response.status === 200) {
                     // Handle both new submissions and existing submissions owned by user
                     if (data.message && data.message.includes('already exists')) {
-                        // Existing submission owned by user - show success message
-                        const submission = data.submission || {};
-                        const status = submission.status || 'PENDING';
-                        const statusColor = status === 'APPROVED' ? '#10b981' : status === 'REJECTED' ? '#ef4444' : '#f59e0b';
-                        
+                        // Existing submission owned by user - show clean success message
                         responseEl.innerHTML = `
-                            <div style="padding: 20px; background: #f0fdf4; border: 2px solid #10b981; border-radius: 8px;">
-                                <div style="font-size: 1.2em; font-weight: bold; color: #166534; margin-bottom: 10px;">
-                                    ✅ Submission Found
+                            <div style="padding: 30px; background: #f0fdf4; border: 2px solid #10b981; border-radius: 12px; text-align: center;">
+                                <div style="font-size: 1.8em; font-weight: bold; color: #166534; margin-bottom: 10px;">
+                                    Submission Successful ✅
                                 </div>
-                                <div style="color: #166534; margin-bottom: 15px; line-height: 1.6;">
-                                    This ${detectedPlatform.toLowerCase()} content is already being tracked by you! Metrics are being collected automatically.
-                                </div>
-                                <div style="background: white; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
-                                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                        <strong>Status:</strong>
-                                        <span style="color: ${statusColor}; font-weight: 600;">${status}</span>
-                                    </div>
-                                    ${submission.latestViews ? `<div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><strong>Current Views:</strong> ${submission.latestViews.toLocaleString()}</div>` : ''}
-                                    ${submission.latestLikes ? `<div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><strong>Current Likes:</strong> ${submission.latestLikes.toLocaleString()}</div>` : ''}
-                                    ${submission.lastMetricsAt ? `<div style="font-size: 0.85em; color: #666; margin-top: 8px;">Last updated: ${new Date(submission.lastMetricsAt).toLocaleString()}</div>` : ''}
+                                <div style="color: #166534; font-size: 1em;">
+                                    This ${detectedPlatform.toLowerCase()} content is already being tracked. Metrics are being collected automatically.
                                 </div>
                             </div>
                         `;
                         responseEl.className = 'response show';
                     } else {
-                        // New submission
-                        output += `\n\n✅ ${detectedPlatform} content submitted successfully! Metrics will be tracked automatically 2x per day.`;
-                        responseEl.textContent = output;
+                        // New submission - show clean success message
+                        responseEl.innerHTML = `
+                            <div style="padding: 30px; background: #f0fdf4; border: 2px solid #10b981; border-radius: 12px; text-align: center;">
+                                <div style="font-size: 1.8em; font-weight: bold; color: #166534; margin-bottom: 10px;">
+                                    Submission Successful ✅
+                                </div>
+                                <div style="color: #166534; font-size: 1em;">
+                                    Your ${detectedPlatform.toLowerCase()} content is now being tracked. Metrics will be collected automatically 2x per day.
+                                </div>
+                            </div>
+                        `;
                         responseEl.className = 'response show';
                     }
                 } else if (response.status === 409) {
