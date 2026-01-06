@@ -145,6 +145,7 @@ router.get('/submissions', async (req: Request, res: Response) => {
       latestShares: number;
       user: { id: string; email: string; username: string | null };
       campaign: { id: string; name: string } | null;
+      canonicalUrl: string | null;
       [key: string]: any;
     }>;
 
