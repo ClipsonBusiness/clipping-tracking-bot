@@ -94,3 +94,4 @@ Look in Railway logs for:
 3. Test health endpoint
 4. If still failing, use Railway CLI to run `db push` manually
 
+

@@ -1893,7 +1893,7 @@ const commands = {
 };
 
 // Handle button interactions
-client.on('interactionCreate', async (interaction) => {
+client.on('interactionCreate', async (interaction: any) => {
   if (interaction.isButton()) {
     try {
       if (interaction.customId.startsWith('check_verify_')) {
@@ -2283,7 +2283,7 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 // Handle modal submissions
-client.on('interactionCreate', async (interaction) => {
+client.on('interactionCreate', async (interaction: any) => {
   if (interaction.isModalSubmit()) {
     try {
       const customId = interaction.customId;
@@ -2365,12 +2365,12 @@ client.on('interactionCreate', async (interaction) => {
         if (platformsStr.trim()) {
           const platformList = platformsStr
             .split(',')
-            .map(p => p.trim().toUpperCase())
-            .filter(p => p.length > 0);
+            .map((p: string) => p.trim().toUpperCase())
+            .filter((p: string) => p.length > 0);
           
           // Validate platform names
           const validPlatforms = ['TIKTOK', 'INSTAGRAM', 'YOUTUBE', 'TWITTER', 'SNAPCHAT', 'TWITCH', 'KICK'];
-          const invalidPlatforms = platformList.filter(p => !validPlatforms.includes(p));
+          const invalidPlatforms = platformList.filter((p: string) => !validPlatforms.includes(p));
           
           if (invalidPlatforms.length > 0) {
             return interaction.reply({
@@ -2503,12 +2503,12 @@ client.on('interactionCreate', async (interaction) => {
         if (platformsStr.trim()) {
           const platformList = platformsStr
             .split(',')
-            .map(p => p.trim().toUpperCase())
-            .filter(p => p.length > 0);
+            .map((p: string) => p.trim().toUpperCase())
+            .filter((p: string) => p.length > 0);
           
           // Validate platform names
           const validPlatforms = ['TIKTOK', 'INSTAGRAM', 'YOUTUBE', 'TWITTER', 'SNAPCHAT', 'TWITCH', 'KICK'];
-          const invalidPlatforms = platformList.filter(p => !validPlatforms.includes(p));
+          const invalidPlatforms = platformList.filter((p: string) => !validPlatforms.includes(p));
           
           if (invalidPlatforms.length > 0) {
             return interaction.reply({
@@ -2857,7 +2857,7 @@ export async function registerCommands() {
 }
 
 // Handle command interactions
-client.on('interactionCreate', async (interaction) => {
+client.on('interactionCreate', async (interaction: any) => {
   console.log('[Discord Bot] Interaction received, type:', interaction.type, 'isChatInputCommand:', interaction.isChatInputCommand());
   
   if (!interaction.isChatInputCommand()) {
@@ -2936,11 +2936,11 @@ export async function initializeDiscordBot() {
     });
 
     // Add error handlers
-    client.on('error', (error) => {
+    client.on('error', (error: any) => {
       console.error('[Discord Bot] Client error:', error);
     });
 
-    client.on('warn', (warning) => {
+    client.on('warn', (warning: any) => {
       console.warn('[Discord Bot] Warning:', warning);
     });
 

@@ -1,3 +1,4 @@
+// @ts-ignore - discord.js types may not be available during build
 import { Client, EmbedBuilder, ChannelType } from 'discord.js';
 import { getPrismaClient } from '../utils/prisma';
 

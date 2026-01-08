@@ -39,3 +39,4 @@ CREATE INDEX "Submission_campaignId_idx" ON "Submission"("campaignId");
 -- AddForeignKey
 ALTER TABLE "Submission" ADD CONSTRAINT "Submission_campaignId_fkey" FOREIGN KEY ("campaignId") REFERENCES "Campaign"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+

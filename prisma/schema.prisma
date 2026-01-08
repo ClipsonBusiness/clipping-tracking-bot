@@ -12,98 +12,101 @@ datasource db {
 
 // SQLite doesn't support enums, using String with @default
 model User {
-  id            String          @id @default(cuid())
-  email         String          @unique
-  username      String?         @unique // Optional for backwards compatibility
-  password      String?         // Hashed password (optional for OAuth users)
-  role          String          @default("CLIPPER") // CLIPPER | ADMIN
-  createdAt     DateTime        @default(now())
-  socialAccounts SocialAccount[]
-  submissions   Submission[]
+  id                  String           @id @default(cuid())
+  email               String           @unique
+  username            String?          @unique // Optional for backwards compatibility
+  password            String? // Hashed password (optional for OAuth users)
+  role                String           @default("CLIPPER") // CLIPPER | ADMIN
+  discordId           String?          @unique // Discord user ID for bot integration
+  createdAt           DateTime         @default(now())
+  socialAccounts      SocialAccount[]
+  submissions         Submission[]
   campaignMemberships CampaignMember[]
 }
 
 model Campaign {
-  id            String          @id @default(cuid())
+  id                  String           @id @default(cuid())
   // Basic Information
-  companyName   String?
-  name          String
-  identifier    String?         // URL suffix identifier
-  managerCode   String?
-  campaignUrl   String?
+  companyName         String?
+  name                String
+  identifier          String? // URL suffix identifier
+  managerCode         String?
+  campaignUrl         String?
   // Status & Type
-  status        String          @default("ACTIVE") // ACTIVE | PAUSED | DRAFT | COMPLETED
-  campaignType  String          @default("PUBLIC") // PUBLIC | PRIVATE
+  status              String           @default("ACTIVE") // ACTIVE | PAUSED | DRAFT | COMPLETED
+  campaignType        String           @default("PUBLIC") // PUBLIC | PRIVATE
   // Descriptions
-  shortDescription String?
-  description   String?         // Full description
+  shortDescription    String?
+  description         String? // Full description
   // Media
-  logoUrl       String?
-  bannerUrl     String?
+  logoUrl             String?
+  bannerUrl           String?
   // Target Audience
-  allowedUserTypes String?      // JSON array: ["CREATORS", "CLIPPERS", "UGC", "SELF_MANAGED"]
+  allowedUserTypes    String? // JSON array: ["CREATORS", "CLIPPERS", "UGC", "SELF_MANAGED"]
   // Platform Requirements
-  acceptedPlatforms String?     // JSON array: ["INSTAGRAM", "TIKTOK", "YOUTUBE", "TWITTER", "TWITCH", "KICK"]
+  acceptedPlatforms   String? // JSON array: ["INSTAGRAM", "TIKTOK", "YOUTUBE", "TWITTER", "TWITCH", "KICK"]
   // Discord Integration
-  discordServerId String?
-  discordRoleId   String?
-  discordInviteLink String?
+  discordServerId     String?
+  discordRoleId       String?
+  discordInviteLink   String?
+  discordChannelId    String? // Discord channel ID for campaign updates
   // Timeline
-  startDate     DateTime?
-  endDate       DateTime?
+  startDate           DateTime?
+  endDate             DateTime?
   // Content Requirements
-  contentGuidelines String?
-  campaignRules     String?
-  requiredHashtags  String?
-  bannedHashtags    String?
-  maxContentAgeHours Int?       // Max age in hours
-  targetSubmissions  Int?
+  contentGuidelines   String?
+  campaignRules       String?
+  requiredHashtags    String?
+  bannedHashtags      String?
+  maxContentAgeHours  Int? // Max age in hours
+  targetSubmissions   Int?
   // Payment & Budget
-  payoutPerLink     Float?      // Fixed amount per submission
-  totalBudget       Float?
-  payoutType        String?     // FLAT_RATE | CPM | HYBRID
-  minViewsForPayout Int?
-  minViewsPerClip   Int?
+  payoutPerLink       Float? // Fixed amount per submission
+  totalBudget         Float?
+  payoutType          String? // FLAT_RATE | CPM | HYBRID
+  minViewsForPayout   Int?
+  minViewsPerClip     Int?
   maxPayoutPerCreator Float?
-  dailyBudgetLimit  Float?
+  dailyBudgetLimit    Float?
   // Metadata
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  members       CampaignMember[]
-  submissions   Submission[]
-  
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  members             CampaignMember[]
+  submissions         Submission[]
+
+  @@unique([identifier])
   @@index([status])
   @@index([campaignType])
-  @@unique([identifier])
 }
 
 model CampaignMember {
-  id          String    @id @default(cuid())
-  userId      String
-  campaignId  String
-  joinedAt    DateTime  @default(now())
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  campaign    Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  
+  id         String   @id @default(cuid())
+  userId     String
+  campaignId String
+  joinedAt   DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
   @@unique([userId, campaignId])
   @@index([campaignId])
   @@index([userId])
 }
 
 model SocialAccount {
-  id                   String   @id @default(cuid())
-  userId               String
-  platform             String   // YOUTUBE
-  handle               String
-  platformUserId       String
-  profileUrl           String?
-  verificationCode     String?
+  id                    String    @id @default(cuid())
+  userId                String
+  platform              String // YOUTUBE
+  handle                String
+  platformUserId        String
+  profileUrl            String?
+  verificationCode      String?
   verificationExpiresAt DateTime?
-  verifiedAt           DateTime?
-  status               String   @default("PENDING") // PENDING | VERIFIED | FAILED
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verifiedAt            DateTime?
+  status                String    @default("PENDING") // PENDING | VERIFIED | FAILED
+  discordMessageId      String? // Discord message ID for verification message
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, platform, handle])
   @@index([userId])
@@ -111,28 +114,29 @@ model SocialAccount {
 }
 
 model Submission {
-  id                  String           @id @default(cuid())
-  userId              String
-  campaignId          String?          // Link to campaign (optional for backwards compatibility)
-  platform            String           // YOUTUBE
-  contentId           String
-  canonicalUrl        String?
+  id                   String           @id @default(cuid())
+  userId               String
+  campaignId           String? // Link to campaign (optional for backwards compatibility)
+  platform             String // YOUTUBE
+  contentId            String
+  canonicalUrl         String?
   authorPlatformUserId String?
-  status              String           @default("PENDING") // PENDING | APPROVED | REJECTED | REMOVED
-  rejectionReason     String?
-  latestViews         Int              @default(0)
-  latestLikes         Int              @default(0)
-  latestComments      Int              @default(0)
-  latestShares        Int              @default(0)
-  lastMetricsAt       DateTime?
-  viewsAtApproval     Int?
-  approvedAt          DateTime?
-  approvedBy          String?
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-  user                User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  campaign            Campaign?        @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-  metricSnapshots     MetricSnapshot[]
+  status               String           @default("PENDING") // PENDING | APPROVED | REJECTED | REMOVED
+  rejectionReason      String?
+  latestViews          Int              @default(0)
+  latestLikes          Int              @default(0)
+  latestComments       Int              @default(0)
+  latestShares         Int              @default(0)
+  lastMetricsAt        DateTime?
+  viewsAtApproval      Int?
+  approvedAt           DateTime?
+  approvedBy           String?
+  discordMessageId     String? // Discord message ID for content review message
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  user                 User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaign             Campaign?        @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  metricSnapshots      MetricSnapshot[]
 
   @@unique([platform, contentId])
   @@index([userId])
@@ -142,15 +146,27 @@ model Submission {
 }
 
 model MetricSnapshot {
-  id          String     @id @default(cuid())
+  id           String     @id @default(cuid())
   submissionId String
-  capturedAt  DateTime   @default(now())
-  views       Int        @default(0)
-  likes       Int        @default(0)
-  comments    Int        @default(0)
-  shares      Int        @default(0)
-  submission  Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  capturedAt   DateTime   @default(now())
+  views        Int        @default(0)
+  likes        Int        @default(0)
+  comments     Int        @default(0)
+  shares       Int        @default(0)
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
 
   @@index([submissionId, capturedAt])
   @@index([submissionId])
+}
+
+model DiscordGuild {
+  id                       String   @id @default(cuid())
+  guildId                  String   @unique // Discord guild/server ID
+  adminCategoryId          String? // Discord category ID for admin channels
+  clipperApprovalChannelId String? // Discord channel ID for clipper approvals
+  contentReviewChannelId   String? // Discord channel ID for content review
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@index([guildId])
 }

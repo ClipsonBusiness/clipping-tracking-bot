@@ -34,3 +34,4 @@ CREATE INDEX IF NOT EXISTS "Campaign_campaignType_idx" ON "Campaign"("campaignTy
 -- CreateIndex
 CREATE UNIQUE INDEX IF NOT EXISTS "Campaign_identifier_key" ON "Campaign"("identifier") WHERE "identifier" IS NOT NULL;
 
+

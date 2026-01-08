@@ -65,3 +65,4 @@ This will use the public connection string and should work!
 2. Set it: `export DATABASE_URL="your-public-connection-string"`
 3. Run: `npx prisma db push`
 
+

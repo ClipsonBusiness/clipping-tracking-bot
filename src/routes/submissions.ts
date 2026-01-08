@@ -954,6 +954,95 @@ router.post('/auto', async (req: Request, res: Response) => {
         });
       }
 
+      // Check campaign platform restrictions
+      const prisma = getPrismaClient();
+      
+      if (campaignId) {
+        // If campaignId is provided, check that specific campaign
+        const campaign = await prisma.campaign.findUnique({
+          where: { id: campaignId },
+          select: { acceptedPlatforms: true, name: true },
+        });
+
+        if (campaign && campaign.acceptedPlatforms) {
+          const acceptedPlatforms = typeof campaign.acceptedPlatforms === 'string' 
+            ? JSON.parse(campaign.acceptedPlatforms) 
+            : campaign.acceptedPlatforms;
+          
+          if (!acceptedPlatforms.includes('YOUTUBE')) {
+            return res.status(403).json({
+              error: 'PLATFORM_NOT_ALLOWED',
+              message: `This campaign "${campaign.name}" does not accept YouTube submissions. Accepted platforms: ${acceptedPlatforms.join(', ')}`,
+            });
+          }
+        }
+      } else {
+        // If no campaignId, check all active campaigns the user is a member of
+        const userMemberships = await prisma.campaignMember.findMany({
+          where: { userId },
+          select: { campaignId: true },
+        });
+
+        if (userMemberships.length > 0) {
+          const campaignIds = userMemberships.map(m => m.campaignId);
+          
+          // Get all active campaigns the user is a member of
+          const campaigns = await prisma.campaign.findMany({
+            where: {
+              id: { in: campaignIds },
+              status: 'ACTIVE',
+            },
+            select: {
+              id: true,
+              name: true,
+              acceptedPlatforms: true,
+              startDate: true,
+              endDate: true,
+            },
+          });
+
+          // Filter by date range
+          const activeCampaigns = campaigns.filter(c => {
+            if (c.startDate && new Date(c.startDate) > now) return false;
+            if (c.endDate && new Date(c.endDate) < now) return false;
+            return true;
+          });
+
+          // If user is a member of any active campaigns with platform restrictions, check them
+          if (activeCampaigns.length > 0) {
+            const restrictedCampaigns = activeCampaigns.filter(c => c.acceptedPlatforms);
+            
+            if (restrictedCampaigns.length > 0) {
+              // Check if platform is allowed in at least one campaign
+              const isAllowed = restrictedCampaigns.some(c => {
+                const acceptedPlatforms = typeof c.acceptedPlatforms === 'string' 
+                  ? JSON.parse(c.acceptedPlatforms) 
+                  : c.acceptedPlatforms;
+                return Array.isArray(acceptedPlatforms) && acceptedPlatforms.includes('YOUTUBE');
+              });
+
+              if (!isAllowed) {
+                const campaignNames = restrictedCampaigns.map(c => c.name).join(', ');
+                const allAcceptedPlatforms = new Set<string>();
+                restrictedCampaigns.forEach(c => {
+                  const platforms = typeof c.acceptedPlatforms === 'string' 
+                    ? JSON.parse(c.acceptedPlatforms) 
+                    : c.acceptedPlatforms;
+                  if (Array.isArray(platforms)) {
+                    platforms.forEach(p => allAcceptedPlatforms.add(p));
+                  }
+                });
+                
+                return res.status(403).json({
+                  error: 'PLATFORM_NOT_ALLOWED',
+                  message: `YouTube is not accepted in your active campaign(s): ${campaignNames}. Accepted platforms: ${Array.from(allAcceptedPlatforms).join(', ')}`,
+                });
+              }
+            }
+          }
+        }
+      }
+
       // Create submission
       const now = new Date();
       const submission = await getPrismaClient().submission.create({
@@ -1030,9 +1119,31 @@ router.post('/auto', async (req: Request, res: Response) => {
         });
       }
 
-      // Verify user is member of campaign if campaignId provided
+      // Check campaign platform restrictions
+      const prisma = getPrismaClient();
+      
       if (campaignId) {
-        const membership = await getPrismaClient().campaignMember.findUnique({
+        // If campaignId is provided, check that specific campaign
+        const campaign = await prisma.campaign.findUnique({
+          where: { id: campaignId },
+          select: { acceptedPlatforms: true, name: true },
+        });
+
+        if (campaign && campaign.acceptedPlatforms) {
+          const acceptedPlatforms = typeof campaign.acceptedPlatforms === 'string' 
+            ? JSON.parse(campaign.acceptedPlatforms) 
+            : campaign.acceptedPlatforms;
+          
+          if (!acceptedPlatforms.includes('TIKTOK')) {
+            return res.status(403).json({
+              error: 'PLATFORM_NOT_ALLOWED',
+              message: `This campaign "${campaign.name}" does not accept TikTok submissions. Accepted platforms: ${acceptedPlatforms.join(', ')}`,
+            });
+          }
+        }
+
+        // Verify user is member of campaign if campaignId provided
+        const membership = await prisma.campaignMember.findUnique({
           where: {
             userId_campaignId: {
               userId,
@@ -1045,6 +1156,71 @@ router.post('/auto', async (req: Request, res: Response) => {
             error: 'Not a member of this campaign',
             message: 'You must join the campaign before submitting content',
           });
+        }
+      } else {
+        // If no campaignId, check all active campaigns the user is a member of
+        const userMemberships = await prisma.campaignMember.findMany({
+          where: { userId },
+          select: { campaignId: true },
+        });
+
+        if (userMemberships.length > 0) {
+          const campaignIds = userMemberships.map(m => m.campaignId);
+          
+          // Get all active campaigns the user is a member of
+          const campaigns = await prisma.campaign.findMany({
+            where: {
+              id: { in: campaignIds },
+              status: 'ACTIVE',
+            },
+            select: {
+              id: true,
+              name: true,
+              acceptedPlatforms: true,
+              startDate: true,
+              endDate: true,
+            },
+          });
+
+          // Filter by date range
+          const activeCampaigns = campaigns.filter(c => {
+            if (c.startDate && new Date(c.startDate) > now) return false;
+            if (c.endDate && new Date(c.endDate) < now) return false;
+            return true;
+          });
+
+          // If user is a member of any active campaigns with platform restrictions, check them
+          if (activeCampaigns.length > 0) {
+            const restrictedCampaigns = activeCampaigns.filter(c => c.acceptedPlatforms);
+            
+            if (restrictedCampaigns.length > 0) {
+              // Check if platform is allowed in at least one campaign
+              const isAllowed = restrictedCampaigns.some(c => {
+                const acceptedPlatforms = typeof c.acceptedPlatforms === 'string' 
+                  ? JSON.parse(c.acceptedPlatforms) 
+                  : c.acceptedPlatforms;
+                return Array.isArray(acceptedPlatforms) && acceptedPlatforms.includes('TIKTOK');
+              });
+
+              if (!isAllowed) {
+                const campaignNames = restrictedCampaigns.map(c => c.name).join(', ');
+                const allAcceptedPlatforms = new Set<string>();
+                restrictedCampaigns.forEach(c => {
+                  const platforms = typeof c.acceptedPlatforms === 'string' 
+                    ? JSON.parse(c.acceptedPlatforms) 
+                    : c.acceptedPlatforms;
+                  if (Array.isArray(platforms)) {
+                    platforms.forEach(p => allAcceptedPlatforms.add(p));
+                  }
+                });
+                
+                return res.status(403).json({
+                  error: 'PLATFORM_NOT_ALLOWED',
+                  message: `TikTok is not accepted in your active campaign(s): ${campaignNames}. Accepted platforms: ${Array.from(allAcceptedPlatforms).join(', ')}`,
+                });
+              }
+            }
+          }
         }
       }
 
@@ -1127,9 +1303,31 @@ router.post('/auto', async (req: Request, res: Response) => {
         });
       }
 
-      // Verify user is member of campaign if campaignId provided
+      // Check campaign platform restrictions
+      const prisma = getPrismaClient();
+      
       if (campaignId) {
-        const membership = await getPrismaClient().campaignMember.findUnique({
+        // If campaignId is provided, check that specific campaign
+        const campaign = await prisma.campaign.findUnique({
+          where: { id: campaignId },
+          select: { acceptedPlatforms: true, name: true },
+        });
+
+        if (campaign && campaign.acceptedPlatforms) {
+          const acceptedPlatforms = typeof campaign.acceptedPlatforms === 'string' 
+            ? JSON.parse(campaign.acceptedPlatforms) 
+            : campaign.acceptedPlatforms;
+          
+          if (!acceptedPlatforms.includes('INSTAGRAM')) {
+            return res.status(403).json({
+              error: 'PLATFORM_NOT_ALLOWED',
+              message: `This campaign "${campaign.name}" does not accept Instagram submissions. Accepted platforms: ${acceptedPlatforms.join(', ')}`,
+            });
+          }
+        }
+
+        // Verify user is member of campaign if campaignId provided
+        const membership = await prisma.campaignMember.findUnique({
           where: {
             userId_campaignId: {
               userId,
@@ -1142,6 +1340,71 @@ router.post('/auto', async (req: Request, res: Response) => {
             error: 'Not a member of this campaign',
             message: 'You must join the campaign before submitting content',
           });
+        }
+      } else {
+        // If no campaignId, check all active campaigns the user is a member of
+        const userMemberships = await prisma.campaignMember.findMany({
+          where: { userId },
+          select: { campaignId: true },
+        });
+
+        if (userMemberships.length > 0) {
+          const campaignIds = userMemberships.map(m => m.campaignId);
+          
+          // Get all active campaigns the user is a member of
+          const campaigns = await prisma.campaign.findMany({
+            where: {
+              id: { in: campaignIds },
+              status: 'ACTIVE',
+            },
+            select: {
+              id: true,
+              name: true,
+              acceptedPlatforms: true,
+              startDate: true,
+              endDate: true,
+            },
+          });
+
+          // Filter by date range
+          const activeCampaigns = campaigns.filter(c => {
+            if (c.startDate && new Date(c.startDate) > now) return false;
+            if (c.endDate && new Date(c.endDate) < now) return false;
+            return true;
+          });
+
+          // If user is a member of any active campaigns with platform restrictions, check them
+          if (activeCampaigns.length > 0) {
+            const restrictedCampaigns = activeCampaigns.filter(c => c.acceptedPlatforms);
+            
+            if (restrictedCampaigns.length > 0) {
+              // Check if platform is allowed in at least one campaign
+              const isAllowed = restrictedCampaigns.some(c => {
+                const acceptedPlatforms = typeof c.acceptedPlatforms === 'string' 
+                  ? JSON.parse(c.acceptedPlatforms) 
+                  : c.acceptedPlatforms;
+                return Array.isArray(acceptedPlatforms) && acceptedPlatforms.includes('INSTAGRAM');
+              });
+
+              if (!isAllowed) {
+                const campaignNames = restrictedCampaigns.map(c => c.name).join(', ');
+                const allAcceptedPlatforms = new Set<string>();
+                restrictedCampaigns.forEach(c => {
+                  const platforms = typeof c.acceptedPlatforms === 'string' 
+                    ? JSON.parse(c.acceptedPlatforms) 
+                    : c.acceptedPlatforms;
+                  if (Array.isArray(platforms)) {
+                    platforms.forEach(p => allAcceptedPlatforms.add(p));
+                  }
+                });
+                
+                return res.status(403).json({
+                  error: 'PLATFORM_NOT_ALLOWED',
+                  message: `Instagram is not accepted in your active campaign(s): ${campaignNames}. Accepted platforms: ${Array.from(allAcceptedPlatforms).join(', ')}`,
+                });
+              }
+            }
+          }
         }
       }
 

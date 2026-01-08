@@ -65,3 +65,4 @@ The migration uses `DATETIME` which is SQLite. PostgreSQL uses `TIMESTAMP`.
 
 Let me create a script to fix this:
 
+

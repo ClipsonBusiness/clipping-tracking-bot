@@ -78,3 +78,4 @@ When you run via `railway run`, it uses Railway's internal network, so `railway.
 2. ✅ Run: `npx @railway/cli run npx prisma db push`
 3. ✅ Should work now!
 
+

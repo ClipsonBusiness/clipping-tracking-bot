@@ -135,7 +135,19 @@ export class YouTubeCollector {
       const channelInfo = await this.resolveChannel(handleOrUrl);
       
       const description = channelInfo.description || '';
-      const codeFound = description.includes(code);
+      
+      // Make code search case-insensitive and handle whitespace
+      const normalizedDescription = description.trim();
+      const normalizedCode = code.trim();
+      
+      // Check if code exists in description (case-insensitive)
+      const codeFound = normalizedDescription.toLowerCase().includes(normalizedCode.toLowerCase());
+      
+      console.log(`[YouTube Collector] Verifying code "${normalizedCode}" in channel description:`);
+      console.log(`[YouTube Collector] Channel: ${channelInfo.handle}`);
+      console.log(`[YouTube Collector] Description length: ${normalizedDescription.length} chars`);
+      console.log(`[YouTube Collector] Description preview: "${normalizedDescription.substring(0, 200)}..."`);
+      console.log(`[YouTube Collector] Code found: ${codeFound}`);
 
       return {
         ok: codeFound,
