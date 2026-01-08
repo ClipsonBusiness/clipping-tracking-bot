@@ -1959,6 +1959,23 @@ client.on('interactionCreate', async (interaction: any) => {
             verifyData,
           });
 
+          // If verified, ensure Discord ID is linked to user account
+          if (isVerified && userId) {
+            try {
+              // Update user's discordId if not already set
+              const user = await prisma.user.findUnique({ where: { id: userId } }) as any;
+              if (user && !user.discordId) {
+                await prisma.user.update({
+                  where: { id: userId },
+                  data: { discordId: interaction.user.id },
+                });
+                console.log(`[Discord Bot] Linked Discord ID ${interaction.user.id} to user ${userId}`);
+              }
+            } catch (error) {
+              console.error('[Discord Bot] Error linking Discord ID:', error);
+            }
+          }
+
           // If verified, automatically add user to active campaigns and link existing submissions
           if (isVerified) {
             try {
