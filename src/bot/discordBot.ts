@@ -130,13 +130,6 @@ const commands = {
       .setDescription('Here\'s how to get started and use the bot:')
       .addFields(
         {
-          name: '📋 Step 1: Verify Your Account',
-          value: 'Use `/verify <platform> <username>` to verify your social media account.\n' +
-                 '**Example:** `/verify youtube @yourchannel`\n' +
-                 'Supported platforms: YouTube, TikTok, Instagram',
-          inline: false,
-        },
-        {
           name: '✅ Step 2: Complete Verification',
           value: 'After running `/verify`, you\'ll receive a verification code.\n' +
                  'Add this code to your social media bio/description, then click the **"Check Verification"** button in the approval channel.',
@@ -157,15 +150,6 @@ const commands = {
         {
           name: '🏆 Leaderboard',
           value: 'Use `/leaderboard [campaign]` to see top clippers ranked by views.',
-          inline: false,
-        },
-        {
-          name: '👑 Admin Commands',
-          value: '**Admins only:**\n' +
-                 '• `/setup` - Set up Discord channels\n' +
-                 '• `/admin-campaign` - Create, edit, or delete campaigns\n' +
-                 '• `/check-campaigns` - View all campaigns\n' +
-                 '• `/admin-campaign-stats` - View campaign statistics',
           inline: false,
         },
       )
