@@ -137,23 +137,34 @@ const commands = {
         let user = await prisma.user.findUnique({ where: { email: discordEmail } }) as any;
         
         if (!user) {
-          // Create a new user with Discord ID
+          // Create a new user with Discord ID and username
           user = await prisma.user.create({
             data: {
               email: discordEmail,
               username: interaction.user.username,
               role: 'CLIPPER',
               discordId: interaction.user.id,
+              discordUsername: interaction.user.username || interaction.user.tag || null,
             },
           });
-          console.log(`[Discord Bot] Created new user for Discord ID ${interaction.user.id}`);
-        } else if (!user.discordId) {
-          // Link existing user to Discord ID
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { discordId: interaction.user.id },
-          });
-          console.log(`[Discord Bot] Linked Discord ID ${interaction.user.id} to existing user ${user.id}`);
+          console.log(`[Discord Bot] Created new user for Discord ID ${interaction.user.id} with username ${interaction.user.username}`);
+        } else {
+          // Update existing user with Discord ID and username if not set
+          const updateData: any = {};
+          if (!user.discordId) {
+            updateData.discordId = interaction.user.id;
+          }
+          if (!user.discordUsername || user.discordUsername !== interaction.user.username) {
+            updateData.discordUsername = interaction.user.username || interaction.user.tag || null;
+          }
+          
+          if (Object.keys(updateData).length > 0) {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: updateData,
+            });
+            console.log(`[Discord Bot] Updated user ${user.id} with Discord info: ${updateData.discordUsername || user.discordUsername} (${interaction.user.id})`);
+          }
         }
         userId = user.id;
       } catch (error) {
