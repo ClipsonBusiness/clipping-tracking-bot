@@ -901,6 +901,8 @@ router.post('/auto', async (req: Request, res: Response) => {
 
     // Forward to the appropriate platform handler
     if (platform === 'YOUTUBE') {
+      const now = new Date(); // Declare once at the start of the YouTube section
+      
       // Parse URL
       const parsedUrl = getYouTubeCollector().parseYouTubeUrl(url);
       const { videoId, canonicalUrl } = parsedUrl;
@@ -1045,8 +1047,6 @@ router.post('/auto', async (req: Request, res: Response) => {
 
       // Auto-join user to active campaigns and link submission
       // This ensures seamless flow: users are added to campaigns automatically when submitting
-      const now = new Date();
-      
       console.log(`[Submission] Processing YouTube submission for user ${userId}, provided campaignId: ${campaignId || 'none'}`);
       
       // Get all active public campaigns
@@ -1165,6 +1165,8 @@ router.post('/auto', async (req: Request, res: Response) => {
       return res.status(201).json(submission);
 
     } else if (platform === 'TIKTOK') {
+      const now = new Date(); // Declare once at the start of the TikTok section
+      
       // Parse URL
       const parsedUrl = getTikTokCollector().parseTikTokUrl(url);
       const { videoId, canonicalUrl } = parsedUrl;
@@ -1315,8 +1317,6 @@ router.post('/auto', async (req: Request, res: Response) => {
 
       // Auto-join user to active campaigns and link submission
       // This ensures seamless flow: users are added to campaigns automatically when submitting
-      const now = new Date();
-      
       console.log(`[Submission] Processing TikTok submission for user ${userId}, provided campaignId: ${campaignId || 'none'}`);
       
       // Get all active public campaigns
@@ -1587,8 +1587,6 @@ router.post('/auto', async (req: Request, res: Response) => {
 
       // Auto-join user to active campaigns and link submission
       // This ensures seamless flow: users are added to campaigns automatically when submitting
-      const now = new Date();
-      
       console.log(`[Submission] Processing Instagram submission for user ${userId}, provided campaignId: ${campaignId || 'none'}`);
       
       // Get all active public campaigns
