@@ -265,23 +265,7 @@ router.get('/:id/accounts', async (req: Request, res: Response) => {
       },
     });
 
-    // Fetch Discord usernames for all users with discordId
-    const usersWithDiscord = socialAccounts
-      .map((a: any) => a.user)
-      .filter((u: any) => u && u.discordId)
-      .map((u: any) => u.discordId);
-    
-    const uniqueDiscordIds = [...new Set(usersWithDiscord)];
-    const discordUsernameMap = new Map<string, string | null>();
-    
-    // Fetch all Discord usernames in parallel
-    await Promise.all(
-      uniqueDiscordIds.map(async (discordId) => {
-        const username = await getDiscordUsername(discordId);
-        discordUsernameMap.set(discordId, username);
-      })
-    );
-
+    // Discord usernames are now stored directly in the User model, no need to fetch
     const accountStats = await Promise.all(
       socialAccounts.map(async (account: any) => {
         const submissions = await prisma.submission.findMany({
