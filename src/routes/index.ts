@@ -4,7 +4,11 @@ import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
 
-// Apply auth middleware to all routes
+// Campaign routes (public routes must be registered BEFORE auth middleware)
+import campaignsRoutes from './campaigns';
+router.use('/campaigns', campaignsRoutes);
+
+// Apply auth middleware to all remaining routes
 router.use(authMiddleware);
 
 // Example route
@@ -40,10 +44,6 @@ router.use('/submissions', submissionsRoutes);
 // Stats/Dashboard routes
 import statsRoutes from './stats';
 router.use('/stats', statsRoutes);
-
-// Campaign routes
-import campaignsRoutes from './campaigns';
-router.use('/campaigns', campaignsRoutes);
 
 export default router;
 
