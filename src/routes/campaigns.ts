@@ -744,6 +744,50 @@ router.get('/:id/submissions', async (req: Request, res: Response) => {
 // Duplicate routes removed - handled above as public routes
 
 /**
+ * POST /api/campaigns/:id/submissions/:submissionId
+ * Link a submission to a campaign (Admin only)
+ */
+router.post('/:id/submissions/:submissionId', async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
+
+    if (!userId || userRole !== 'ADMIN') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { id: campaignId, submissionId } = req.params;
+    const prisma = getPrismaClient();
+
+    // Verify campaign exists
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: campaignId },
+    });
+
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found' });
+    }
+
+    // Link submission to campaign
+    await prisma.submission.update({
+      where: { id: submissionId },
+      data: { campaignId },
+    });
+
+    res.json({ 
+      success: true,
+      message: 'Submission linked to campaign',
+    });
+  } catch (error: any) {
+    console.error('Failed to link submission to campaign:', error);
+    res.status(500).json({ 
+      error: 'Failed to link submission to campaign',
+      message: error.message,
+    });
+  }
+});
+
+/**
  * DELETE /api/campaigns/:id/submissions/:submissionId
  * Remove a submission from campaign (set campaignId to null)
  */
