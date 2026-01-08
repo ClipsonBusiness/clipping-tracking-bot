@@ -1618,17 +1618,71 @@ router.post('/auto', async (req: Request, res: Response) => {
       }
 
       // Auto-link to active campaign if user is a member and no campaignId provided
+      // If user is not a member, auto-join them to active public campaigns
       let finalCampaignId = campaignId || null;
       if (!finalCampaignId) {
+        const now = new Date();
+        
+        // First, check if user is already a member
         const userMemberships = await prisma.campaignMember.findMany({
           where: { userId },
           select: { campaignId: true },
         });
 
-        if (userMemberships.length > 0) {
-          const campaignIds = userMemberships.map(m => m.campaignId);
-          const now = new Date();
-          
+        let campaignIds = userMemberships.map(m => m.campaignId);
+        
+        // If user is not a member of any campaigns, auto-join them to active public campaigns
+        if (campaignIds.length === 0) {
+          const activePublicCampaigns = await prisma.campaign.findMany({
+            where: {
+              status: 'ACTIVE',
+              campaignType: 'PUBLIC',
+              OR: [
+                { startDate: null },
+                { startDate: { lte: now } },
+              ],
+              AND: [
+                { OR: [
+                  { endDate: null },
+                  { endDate: { gte: now } },
+                ]},
+              ],
+            },
+            select: { id: true, acceptedPlatforms: true },
+          });
+
+          for (const campaign of activePublicCampaigns) {
+            // Check if platform is allowed (if restrictions exist)
+            let canJoin = true;
+            if (campaign.acceptedPlatforms) {
+              const acceptedPlatforms = typeof campaign.acceptedPlatforms === 'string' 
+                ? JSON.parse(campaign.acceptedPlatforms) 
+                : campaign.acceptedPlatforms;
+              
+              if (Array.isArray(acceptedPlatforms) && !acceptedPlatforms.includes('INSTAGRAM')) {
+                canJoin = false;
+              }
+            }
+
+            if (canJoin) {
+              try {
+                await prisma.campaignMember.create({
+                  data: {
+                    userId,
+                    campaignId: campaign.id,
+                  },
+                });
+                campaignIds.push(campaign.id);
+                console.log(`[Auto-Join] Auto-joined user ${userId} to campaign ${campaign.id} when submitting`);
+              } catch (error) {
+                // Already a member or other error, continue
+                console.log(`[Auto-Join] Could not join campaign ${campaign.id}:`, error);
+              }
+            }
+          }
+        }
+
+        if (campaignIds.length > 0) {
           // Get the most recent active campaign the user is a member of
           const activeCampaign = await prisma.campaign.findFirst({
             where: {
