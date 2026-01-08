@@ -20,7 +20,7 @@ const getDiscordUsername = async (discordId: string | null): Promise<string | nu
       return null;
     }
     
-    const user = await response.json();
+    const user = await response.json() as { username?: string };
     return user.username || null;
   } catch (error) {
     console.error(`Error fetching Discord username for ${discordId}:`, error);
