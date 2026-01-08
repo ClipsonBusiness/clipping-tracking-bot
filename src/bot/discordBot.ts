@@ -1318,6 +1318,7 @@ const commands = {
           const startDate = c.startDate ? new Date(c.startDate).toLocaleDateString() : 'N/A';
           const endDate = c.endDate ? new Date(c.endDate).toLocaleDateString() : 'N/A';
           return `**${c.name}**\n` +
+            `ID: \`${c.id}\`\n` +
             `Status: ✅ ACTIVE\n` +
             `Dates: ${startDate} - ${endDate}\n` +
             `Submissions: ${c._count.submissions} | Members: ${c._count.members}`;
@@ -1355,7 +1356,7 @@ const commands = {
       if (otherCampaigns.length > 0) {
         embed.addFields({
           name: `📋 Other Status (${otherCampaigns.length})`,
-          value: otherCampaigns.map((c: any) => `**${c.name}** - ${c.status}`).join('\n') || 'None',
+          value: otherCampaigns.map((c: any) => `**${c.name}** (ID: \`${c.id}\`) - ${c.status}`).join('\n') || 'None',
           inline: false,
         });
       }
@@ -2696,7 +2697,7 @@ client.on('interactionCreate', async (interaction: any) => {
         }
 
         // Reply to user
-        let replyContent = `✅ **Campaign Created!**\n\n**Name:** ${campaignName}\n**Start Date:** ${startDateStr}\n**End Date:** ${endDateStr}\n**Min Views:** ${minViews.toLocaleString()}\n**Payment per Million:** $${paymentPerMillion.toLocaleString()}\n**Total Budget:** $${totalBudget.toLocaleString()}`;
+        let replyContent = `✅ **Campaign Created!**\n\n**Campaign ID:** \`${campaign.id}\`\n**Name:** ${campaignName}\n**Start Date:** ${startDateStr}\n**End Date:** ${endDateStr}\n**Min Views:** ${minViews.toLocaleString()}\n**Payment per Million:** $${paymentPerMillion.toLocaleString()}\n**Total Budget:** $${totalBudget.toLocaleString()}`;
         
         if (acceptedPlatforms && acceptedPlatforms.length > 0) {
           replyContent += `\n**Accepted Platforms:** ${acceptedPlatforms.join(', ')}`;
@@ -2707,6 +2708,8 @@ client.on('interactionCreate', async (interaction: any) => {
         if (channelCreated && channelLink) {
           replyContent += `\n\n**Campaign Channel:** ${channelLink}`;
         }
+        
+        replyContent += `\n\n**Dashboard URL:** https://clipping-tracking-api-production-4f77.up.railway.app/campaign-dashboard?id=${campaign.id}`;
 
         return interaction.reply({
           content: replyContent,
