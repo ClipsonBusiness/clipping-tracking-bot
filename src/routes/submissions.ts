@@ -1043,11 +1043,62 @@ router.post('/auto', async (req: Request, res: Response) => {
         }
       }
 
+      // Auto-link to active campaign if user is a member and no campaignId provided
+      let finalCampaignId = campaignId || null;
+      if (!finalCampaignId) {
+        const userMemberships = await prisma.campaignMember.findMany({
+          where: { userId },
+          select: { campaignId: true },
+        });
+
+        if (userMemberships.length > 0) {
+          const campaignIds = userMemberships.map(m => m.campaignId);
+          const now = new Date();
+          
+          // Get the most recent active campaign the user is a member of
+          const activeCampaign = await prisma.campaign.findFirst({
+            where: {
+              id: { in: campaignIds },
+              status: 'ACTIVE',
+              OR: [
+                { startDate: null },
+                { startDate: { lte: now } },
+              ],
+              AND: [
+                { OR: [
+                  { endDate: null },
+                  { endDate: { gte: now } },
+                ]},
+              ],
+            },
+            orderBy: { createdAt: 'desc' },
+            select: { id: true, acceptedPlatforms: true },
+          });
+
+          if (activeCampaign) {
+            // Check if platform is allowed (if restrictions exist)
+            if (activeCampaign.acceptedPlatforms) {
+              const acceptedPlatforms = typeof activeCampaign.acceptedPlatforms === 'string' 
+                ? JSON.parse(activeCampaign.acceptedPlatforms) 
+                : activeCampaign.acceptedPlatforms;
+              
+              if (Array.isArray(acceptedPlatforms) && acceptedPlatforms.includes('YOUTUBE')) {
+                finalCampaignId = activeCampaign.id;
+              }
+            } else {
+              // No platform restrictions, auto-link
+              finalCampaignId = activeCampaign.id;
+            }
+          }
+        }
+      }
+
       // Create submission
       const now = new Date();
       const submission = await getPrismaClient().submission.create({
         data: {
           userId,
+          campaignId: finalCampaignId,
           platform: 'YOUTUBE',
           contentId: videoId,
           canonicalUrl,
@@ -1224,12 +1275,62 @@ router.post('/auto', async (req: Request, res: Response) => {
         }
       }
 
+      // Auto-link to active campaign if user is a member and no campaignId provided
+      let finalCampaignId = campaignId || null;
+      if (!finalCampaignId) {
+        const userMemberships = await prisma.campaignMember.findMany({
+          where: { userId },
+          select: { campaignId: true },
+        });
+
+        if (userMemberships.length > 0) {
+          const campaignIds = userMemberships.map(m => m.campaignId);
+          const now = new Date();
+          
+          // Get the most recent active campaign the user is a member of
+          const activeCampaign = await prisma.campaign.findFirst({
+            where: {
+              id: { in: campaignIds },
+              status: 'ACTIVE',
+              OR: [
+                { startDate: null },
+                { startDate: { lte: now } },
+              ],
+              AND: [
+                { OR: [
+                  { endDate: null },
+                  { endDate: { gte: now } },
+                ]},
+              ],
+            },
+            orderBy: { createdAt: 'desc' },
+            select: { id: true, acceptedPlatforms: true },
+          });
+
+          if (activeCampaign) {
+            // Check if platform is allowed (if restrictions exist)
+            if (activeCampaign.acceptedPlatforms) {
+              const acceptedPlatforms = typeof activeCampaign.acceptedPlatforms === 'string' 
+                ? JSON.parse(activeCampaign.acceptedPlatforms) 
+                : activeCampaign.acceptedPlatforms;
+              
+              if (Array.isArray(acceptedPlatforms) && acceptedPlatforms.includes('TIKTOK')) {
+                finalCampaignId = activeCampaign.id;
+              }
+            } else {
+              // No platform restrictions, auto-link
+              finalCampaignId = activeCampaign.id;
+            }
+          }
+        }
+      }
+
       // Create submission
       const now = new Date();
       const submission = await getPrismaClient().submission.create({
         data: {
           userId,
-          campaignId: campaignId || null,
+          campaignId: finalCampaignId,
           platform: 'TIKTOK',
           contentId: videoId,
           canonicalUrl,
@@ -1408,12 +1509,62 @@ router.post('/auto', async (req: Request, res: Response) => {
         }
       }
 
+      // Auto-link to active campaign if user is a member and no campaignId provided
+      let finalCampaignId = campaignId || null;
+      if (!finalCampaignId) {
+        const userMemberships = await prisma.campaignMember.findMany({
+          where: { userId },
+          select: { campaignId: true },
+        });
+
+        if (userMemberships.length > 0) {
+          const campaignIds = userMemberships.map(m => m.campaignId);
+          const now = new Date();
+          
+          // Get the most recent active campaign the user is a member of
+          const activeCampaign = await prisma.campaign.findFirst({
+            where: {
+              id: { in: campaignIds },
+              status: 'ACTIVE',
+              OR: [
+                { startDate: null },
+                { startDate: { lte: now } },
+              ],
+              AND: [
+                { OR: [
+                  { endDate: null },
+                  { endDate: { gte: now } },
+                ]},
+              ],
+            },
+            orderBy: { createdAt: 'desc' },
+            select: { id: true, acceptedPlatforms: true },
+          });
+
+          if (activeCampaign) {
+            // Check if platform is allowed (if restrictions exist)
+            if (activeCampaign.acceptedPlatforms) {
+              const acceptedPlatforms = typeof activeCampaign.acceptedPlatforms === 'string' 
+                ? JSON.parse(activeCampaign.acceptedPlatforms) 
+                : activeCampaign.acceptedPlatforms;
+              
+              if (Array.isArray(acceptedPlatforms) && acceptedPlatforms.includes('INSTAGRAM')) {
+                finalCampaignId = activeCampaign.id;
+              }
+            } else {
+              // No platform restrictions, auto-link
+              finalCampaignId = activeCampaign.id;
+            }
+          }
+        }
+      }
+
       // Create submission
       const now = new Date();
       const submission = await getPrismaClient().submission.create({
         data: {
           userId,
-          campaignId: campaignId || null,
+          campaignId: finalCampaignId,
           platform: 'INSTAGRAM',
           contentId: mediaId,
           canonicalUrl,
