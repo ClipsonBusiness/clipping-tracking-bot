@@ -9,19 +9,28 @@ const getDiscordUsername = async (discordId: string | null): Promise<string | nu
   if (!discordId) return null;
   
   try {
+    const botToken = process.env.DISCORD_BOT_TOKEN;
+    if (!botToken) {
+      console.warn('DISCORD_BOT_TOKEN not set, cannot fetch Discord usernames');
+      return null;
+    }
+
     const response = await fetch(`https://discord.com/api/v10/users/${discordId}`, {
       headers: {
-        'Authorization': `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+        'Authorization': `Bot ${botToken}`,
       },
     });
     
     if (!response.ok) {
-      console.warn(`Failed to fetch Discord user ${discordId}: ${response.status}`);
+      console.warn(`Failed to fetch Discord user ${discordId}: ${response.status} ${response.statusText}`);
       return null;
     }
     
-    const user = await response.json() as { username?: string };
-    return user.username || null;
+    const user = await response.json() as { username?: string; discriminator?: string };
+    // Discord usernames are now just the username (no discriminator in new system)
+    const username = user.username || null;
+    console.log(`Fetched Discord username for ${discordId}: ${username}`);
+    return username;
   } catch (error) {
     console.error(`Error fetching Discord username for ${discordId}:`, error);
     return null;
@@ -340,6 +349,8 @@ router.get('/:id/accounts', async (req: Request, res: Response) => {
 
         const user = account.user || {};
         const discordUsername = user.discordId ? discordUsernameMap.get(user.discordId) || null : null;
+        
+        console.log(`[Campaign Accounts] Account ${account.handle} (${account.platform}): discordId=${user.discordId}, discordUsername=${discordUsername}`);
         
         return {
           id: account.id,
