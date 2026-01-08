@@ -1133,7 +1133,6 @@ router.post('/auto', async (req: Request, res: Response) => {
       }
 
       // Create submission
-      const now = new Date();
       const submission = await getPrismaClient().submission.create({
         data: {
           userId,
@@ -1315,7 +1314,10 @@ router.post('/auto', async (req: Request, res: Response) => {
       }
 
       // Auto-join user to active campaigns and link submission
+      // This ensures seamless flow: users are added to campaigns automatically when submitting
       const now = new Date();
+      
+      console.log(`[Submission] Processing Instagram submission for user ${userId}, provided campaignId: ${campaignId || 'none'}`);
       
       // Get all active public campaigns
       const activePublicCampaigns = await prisma.campaign.findMany({
@@ -1575,7 +1577,10 @@ router.post('/auto', async (req: Request, res: Response) => {
       }
 
       // Auto-join user to active campaigns and link submission
+      // This ensures seamless flow: users are added to campaigns automatically when submitting
       const now = new Date();
+      
+      console.log(`[Submission] Processing Instagram submission for user ${userId}, provided campaignId: ${campaignId || 'none'}`);
       
       // Get all active public campaigns
       const activePublicCampaigns = await prisma.campaign.findMany({
@@ -1651,7 +1656,6 @@ router.post('/auto', async (req: Request, res: Response) => {
       }
 
       // Create submission
-      const now = new Date();
       const submission = await getPrismaClient().submission.create({
         data: {
           userId,
