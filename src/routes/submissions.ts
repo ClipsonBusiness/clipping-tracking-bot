@@ -1165,7 +1165,8 @@ router.post('/auto', async (req: Request, res: Response) => {
       return res.status(201).json(submission);
 
     } else if (platform === 'TIKTOK') {
-      const now = new Date(); // Declare once at the start of the TikTok section
+      // Declare now once at the start of the TikTok section to avoid redeclaration errors
+      const now = new Date();
       
       // Parse URL
       const parsedUrl = getTikTokCollector().parseTikTokUrl(url);
