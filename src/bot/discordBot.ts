@@ -1339,7 +1339,7 @@ const commands = {
 
       if (pausedCampaigns.length > 0) {
         let pausedList = pausedCampaigns.slice(0, 5).map((c: any) => {
-          return `**${c.name}** - ${c._count.submissions} submissions`;
+          return `**${c.name}** (ID: \`${c.id}\`) - ${c._count.submissions} submissions`;
         }).join('\n');
 
         if (pausedCampaigns.length > 5) {
