@@ -190,32 +190,57 @@ router.get('/:id/submissions', async (req: Request, res: Response) => {
       },
     });
 
-    // Discord usernames are now stored directly in the User model, no need to fetch
-    const submissionsWithAccounts = submissions.map((submission: any) => {
-      const userAccounts = socialAccounts.filter(sa => sa.userId === submission.userId);
-      const accountHandle = userAccounts.find(sa => sa.platform === submission.platform)?.handle || null;
-      
-      // Use stored Discord username directly from User model
-      const user = submission.user || {};
-      const discordUsername = user.discordUsername || null;
+    // Discord usernames are now stored directly in the User model, but fetch missing ones
+    const submissionsWithAccounts = await Promise.all(
+      submissions.map(async (submission: any) => {
+        const userAccounts = socialAccounts.filter(sa => sa.userId === submission.userId);
+        const accountHandle = userAccounts.find(sa => sa.platform === submission.platform)?.handle || null;
+        
+        // Use stored Discord username directly from User model
+        const user = submission.user || {};
+        let discordUsername = user.discordUsername || null;
+        
+        // If username is missing but discordId exists, try to fetch it from Discord client
+        if (!discordUsername && user.discordId) {
+          try {
+            // Try to import and use Discord client if available
+            const { default: discordClient } = await import('../bot/discordBot');
+            if (discordClient && discordClient.isReady()) {
+              const discordUser = await discordClient.users.fetch(user.discordId).catch(() => null);
+              if (discordUser) {
+                discordUsername = discordUser.username || discordUser.tag || null;
+                // Update the database for future use
+                if (discordUsername) {
+                  await prisma.user.update({
+                    where: { id: user.id },
+                    data: { discordUsername },
+                  }).catch(() => {}); // Don't fail if update fails
+                }
+              }
+            }
+          } catch (error) {
+            // Silently fail - just use null
+          }
+        }
 
-      return {
-        id: submission.id,
-        platform: submission.platform,
-        canonicalUrl: submission.canonicalUrl,
-        status: submission.status,
-        latestViews: submission.latestViews || 0,
-        latestLikes: submission.latestLikes || 0,
-        latestComments: submission.latestComments || 0,
-        latestShares: submission.latestShares || 0,
-        createdAt: submission.createdAt,
-        updatedAt: submission.updatedAt,
-        creatorHandle: accountHandle,
-        discordUsername,
-        userEmail: user.email || null,
-        userName: user.username || null,
-      };
-    });
+        return {
+          id: submission.id,
+          platform: submission.platform,
+          canonicalUrl: submission.canonicalUrl,
+          status: submission.status,
+          latestViews: submission.latestViews || 0,
+          latestLikes: submission.latestLikes || 0,
+          latestComments: submission.latestComments || 0,
+          latestShares: submission.latestShares || 0,
+          createdAt: submission.createdAt,
+          updatedAt: submission.updatedAt,
+          creatorHandle: accountHandle,
+          discordUsername,
+          userEmail: user.email || null,
+          userName: user.username || null,
+        };
+      })
+    );
 
     res.json({
       submissions: submissionsWithAccounts,
