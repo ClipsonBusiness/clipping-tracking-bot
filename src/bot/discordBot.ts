@@ -130,13 +130,13 @@ const commands = {
       .setDescription('Here\'s how to get started and use the bot:')
       .addFields(
         {
-          name: '✅ Step 2: Complete Verification',
+          name: '✅ Step 1: Complete Verification',
           value: 'After running `/verify`, you\'ll receive a verification code.\n' +
-                 'Add this code to your social media bio/description, then click the **"Check Verification"** button in the approval channel.',
+                 'Add this code to your social media bio/description, then click the "Check Verification" button in the approval channel.',
           inline: false,
         },
         {
-          name: '📤 Step 3: Submit Content',
+          name: '📤 Step 2: Submit Content',
           value: 'Once verified, use `/submit-clip <url>` to submit your content.\n' +
                  '**Example:** `/submit-clip https://youtube.com/watch?v=...`\n' +
                  'The bot will automatically detect the platform!',
@@ -153,7 +153,6 @@ const commands = {
           inline: false,
         },
       )
-      .setFooter({ text: 'Need help? Contact an admin or check the documentation.' })
       .setTimestamp();
 
     await interaction.editReply({ embeds: [embed] });
