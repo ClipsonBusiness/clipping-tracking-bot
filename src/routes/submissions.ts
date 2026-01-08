@@ -1043,54 +1043,58 @@ router.post('/auto', async (req: Request, res: Response) => {
         }
       }
 
-      // Auto-link to active campaign if user is a member and no campaignId provided
-      // If user is not a member, auto-join them to active public campaigns
+      // Auto-join user to active campaigns and link submission
+      // This ensures seamless flow: users are added to campaigns automatically when submitting
+      const now = new Date();
+      
+      // Get all active public campaigns
+      const activePublicCampaigns = await prisma.campaign.findMany({
+        where: {
+          status: 'ACTIVE',
+          campaignType: 'PUBLIC',
+          OR: [
+            { startDate: null },
+            { startDate: { lte: now } },
+          ],
+          AND: [
+            { OR: [
+              { endDate: null },
+              { endDate: { gte: now } },
+            ]},
+          ],
+        },
+        select: { id: true, acceptedPlatforms: true },
+        orderBy: { createdAt: 'desc' }, // Most recent first
+      });
+
       let finalCampaignId = campaignId || null;
-      if (!finalCampaignId) {
-        const now = new Date();
-        
-        // First, check if user is already a member
+      
+      // If no campaignId provided, find the best campaign to link
+      if (!finalCampaignId && activePublicCampaigns.length > 0) {
+        // Check if user is already a member of any campaigns
         const userMemberships = await prisma.campaignMember.findMany({
           where: { userId },
           select: { campaignId: true },
         });
+        const userCampaignIds = new Set(userMemberships.map(m => m.campaignId));
 
-        let campaignIds = userMemberships.map(m => m.campaignId);
-        
-        // If user is not a member of any campaigns, auto-join them to active public campaigns
-        if (campaignIds.length === 0) {
-          const activePublicCampaigns = await prisma.campaign.findMany({
-            where: {
-              status: 'ACTIVE',
-              campaignType: 'PUBLIC',
-              OR: [
-                { startDate: null },
-                { startDate: { lte: now } },
-              ],
-              AND: [
-                { OR: [
-                  { endDate: null },
-                  { endDate: { gte: now } },
-                ]},
-              ],
-            },
-            select: { id: true, acceptedPlatforms: true },
-          });
-
-          for (const campaign of activePublicCampaigns) {
-            // Check if platform is allowed (if restrictions exist)
-            let canJoin = true;
-            if (campaign.acceptedPlatforms) {
-              const acceptedPlatforms = typeof campaign.acceptedPlatforms === 'string' 
-                ? JSON.parse(campaign.acceptedPlatforms) 
-                : campaign.acceptedPlatforms;
-              
-              if (Array.isArray(acceptedPlatforms) && !acceptedPlatforms.includes('YOUTUBE')) {
-                canJoin = false;
-              }
+        // Try to auto-join user to campaigns and find the best one to link
+        for (const campaign of activePublicCampaigns) {
+          // Check if platform is allowed (if restrictions exist)
+          let canJoin = true;
+          if (campaign.acceptedPlatforms) {
+            const acceptedPlatforms = typeof campaign.acceptedPlatforms === 'string' 
+              ? JSON.parse(campaign.acceptedPlatforms) 
+              : campaign.acceptedPlatforms;
+            
+            if (Array.isArray(acceptedPlatforms) && !acceptedPlatforms.includes('YOUTUBE')) {
+              canJoin = false;
             }
+          }
 
-            if (canJoin) {
+          if (canJoin) {
+            // Auto-join if not already a member
+            if (!userCampaignIds.has(campaign.id)) {
               try {
                 await prisma.campaignMember.create({
                   data: {
@@ -1098,50 +1102,19 @@ router.post('/auto', async (req: Request, res: Response) => {
                     campaignId: campaign.id,
                   },
                 });
-                campaignIds.push(campaign.id);
+                userCampaignIds.add(campaign.id);
                 console.log(`[Auto-Join] Auto-joined user ${userId} to campaign ${campaign.id} when submitting`);
-              } catch (error) {
+              } catch (error: any) {
                 // Already a member or other error, continue
-                console.log(`[Auto-Join] Could not join campaign ${campaign.id}:`, error);
+                if (error.code !== 'P2002') { // Ignore unique constraint errors
+                  console.log(`[Auto-Join] Could not join campaign ${campaign.id}:`, error);
+                }
               }
             }
-          }
-        }
 
-        if (campaignIds.length > 0) {
-          // Get the most recent active campaign the user is a member of
-          const activeCampaign = await prisma.campaign.findFirst({
-            where: {
-              id: { in: campaignIds },
-              status: 'ACTIVE',
-              OR: [
-                { startDate: null },
-                { startDate: { lte: now } },
-              ],
-              AND: [
-                { OR: [
-                  { endDate: null },
-                  { endDate: { gte: now } },
-                ]},
-              ],
-            },
-            orderBy: { createdAt: 'desc' },
-            select: { id: true, acceptedPlatforms: true },
-          });
-
-          if (activeCampaign) {
-            // Check if platform is allowed (if restrictions exist)
-            if (activeCampaign.acceptedPlatforms) {
-              const acceptedPlatforms = typeof activeCampaign.acceptedPlatforms === 'string' 
-                ? JSON.parse(activeCampaign.acceptedPlatforms) 
-                : activeCampaign.acceptedPlatforms;
-              
-              if (Array.isArray(acceptedPlatforms) && acceptedPlatforms.includes('YOUTUBE')) {
-                finalCampaignId = activeCampaign.id;
-              }
-            } else {
-              // No platform restrictions, auto-link
-              finalCampaignId = activeCampaign.id;
+            // Link to the first matching campaign (most recent)
+            if (!finalCampaignId) {
+              finalCampaignId = campaign.id;
             }
           }
         }
@@ -1329,54 +1302,57 @@ router.post('/auto', async (req: Request, res: Response) => {
         }
       }
 
-      // Auto-link to active campaign if user is a member and no campaignId provided
-      // If user is not a member, auto-join them to active public campaigns
+      // Auto-join user to active campaigns and link submission
+      const now = new Date();
+      
+      // Get all active public campaigns
+      const activePublicCampaigns = await prisma.campaign.findMany({
+        where: {
+          status: 'ACTIVE',
+          campaignType: 'PUBLIC',
+          OR: [
+            { startDate: null },
+            { startDate: { lte: now } },
+          ],
+          AND: [
+            { OR: [
+              { endDate: null },
+              { endDate: { gte: now } },
+            ]},
+          ],
+        },
+        select: { id: true, acceptedPlatforms: true },
+        orderBy: { createdAt: 'desc' }, // Most recent first
+      });
+
       let finalCampaignId = campaignId || null;
-      if (!finalCampaignId) {
-        const now = new Date();
-        
-        // First, check if user is already a member
+      
+      // If no campaignId provided, find the best campaign to link
+      if (!finalCampaignId && activePublicCampaigns.length > 0) {
+        // Check if user is already a member of any campaigns
         const userMemberships = await prisma.campaignMember.findMany({
           where: { userId },
           select: { campaignId: true },
         });
+        const userCampaignIds = new Set(userMemberships.map(m => m.campaignId));
 
-        let campaignIds = userMemberships.map(m => m.campaignId);
-        
-        // If user is not a member of any campaigns, auto-join them to active public campaigns
-        if (campaignIds.length === 0) {
-          const activePublicCampaigns = await prisma.campaign.findMany({
-            where: {
-              status: 'ACTIVE',
-              campaignType: 'PUBLIC',
-              OR: [
-                { startDate: null },
-                { startDate: { lte: now } },
-              ],
-              AND: [
-                { OR: [
-                  { endDate: null },
-                  { endDate: { gte: now } },
-                ]},
-              ],
-            },
-            select: { id: true, acceptedPlatforms: true },
-          });
-
-          for (const campaign of activePublicCampaigns) {
-            // Check if platform is allowed (if restrictions exist)
-            let canJoin = true;
-            if (campaign.acceptedPlatforms) {
-              const acceptedPlatforms = typeof campaign.acceptedPlatforms === 'string' 
-                ? JSON.parse(campaign.acceptedPlatforms) 
-                : campaign.acceptedPlatforms;
-              
-              if (Array.isArray(acceptedPlatforms) && !acceptedPlatforms.includes('TIKTOK')) {
-                canJoin = false;
-              }
+        // Try to auto-join user to campaigns and find the best one to link
+        for (const campaign of activePublicCampaigns) {
+          // Check if platform is allowed (if restrictions exist)
+          let canJoin = true;
+          if (campaign.acceptedPlatforms) {
+            const acceptedPlatforms = typeof campaign.acceptedPlatforms === 'string' 
+              ? JSON.parse(campaign.acceptedPlatforms) 
+              : campaign.acceptedPlatforms;
+            
+            if (Array.isArray(acceptedPlatforms) && !acceptedPlatforms.includes('TIKTOK')) {
+              canJoin = false;
             }
+          }
 
-            if (canJoin) {
+          if (canJoin) {
+            // Auto-join if not already a member
+            if (!userCampaignIds.has(campaign.id)) {
               try {
                 await prisma.campaignMember.create({
                   data: {
@@ -1384,50 +1360,19 @@ router.post('/auto', async (req: Request, res: Response) => {
                     campaignId: campaign.id,
                   },
                 });
-                campaignIds.push(campaign.id);
+                userCampaignIds.add(campaign.id);
                 console.log(`[Auto-Join] Auto-joined user ${userId} to campaign ${campaign.id} when submitting`);
-              } catch (error) {
+              } catch (error: any) {
                 // Already a member or other error, continue
-                console.log(`[Auto-Join] Could not join campaign ${campaign.id}:`, error);
+                if (error.code !== 'P2002') { // Ignore unique constraint errors
+                  console.log(`[Auto-Join] Could not join campaign ${campaign.id}:`, error);
+                }
               }
             }
-          }
-        }
 
-        if (campaignIds.length > 0) {
-          // Get the most recent active campaign the user is a member of
-          const activeCampaign = await prisma.campaign.findFirst({
-            where: {
-              id: { in: campaignIds },
-              status: 'ACTIVE',
-              OR: [
-                { startDate: null },
-                { startDate: { lte: now } },
-              ],
-              AND: [
-                { OR: [
-                  { endDate: null },
-                  { endDate: { gte: now } },
-                ]},
-              ],
-            },
-            orderBy: { createdAt: 'desc' },
-            select: { id: true, acceptedPlatforms: true },
-          });
-
-          if (activeCampaign) {
-            // Check if platform is allowed (if restrictions exist)
-            if (activeCampaign.acceptedPlatforms) {
-              const acceptedPlatforms = typeof activeCampaign.acceptedPlatforms === 'string' 
-                ? JSON.parse(activeCampaign.acceptedPlatforms) 
-                : activeCampaign.acceptedPlatforms;
-              
-              if (Array.isArray(acceptedPlatforms) && acceptedPlatforms.includes('TIKTOK')) {
-                finalCampaignId = activeCampaign.id;
-              }
-            } else {
-              // No platform restrictions, auto-link
-              finalCampaignId = activeCampaign.id;
+            // Link to the first matching campaign (most recent)
+            if (!finalCampaignId) {
+              finalCampaignId = campaign.id;
             }
           }
         }
@@ -1617,54 +1562,57 @@ router.post('/auto', async (req: Request, res: Response) => {
         }
       }
 
-      // Auto-link to active campaign if user is a member and no campaignId provided
-      // If user is not a member, auto-join them to active public campaigns
+      // Auto-join user to active campaigns and link submission
+      const now = new Date();
+      
+      // Get all active public campaigns
+      const activePublicCampaigns = await prisma.campaign.findMany({
+        where: {
+          status: 'ACTIVE',
+          campaignType: 'PUBLIC',
+          OR: [
+            { startDate: null },
+            { startDate: { lte: now } },
+          ],
+          AND: [
+            { OR: [
+              { endDate: null },
+              { endDate: { gte: now } },
+            ]},
+          ],
+        },
+        select: { id: true, acceptedPlatforms: true },
+        orderBy: { createdAt: 'desc' }, // Most recent first
+      });
+
       let finalCampaignId = campaignId || null;
-      if (!finalCampaignId) {
-        const now = new Date();
-        
-        // First, check if user is already a member
+      
+      // If no campaignId provided, find the best campaign to link
+      if (!finalCampaignId && activePublicCampaigns.length > 0) {
+        // Check if user is already a member of any campaigns
         const userMemberships = await prisma.campaignMember.findMany({
           where: { userId },
           select: { campaignId: true },
         });
+        const userCampaignIds = new Set(userMemberships.map(m => m.campaignId));
 
-        let campaignIds = userMemberships.map(m => m.campaignId);
-        
-        // If user is not a member of any campaigns, auto-join them to active public campaigns
-        if (campaignIds.length === 0) {
-          const activePublicCampaigns = await prisma.campaign.findMany({
-            where: {
-              status: 'ACTIVE',
-              campaignType: 'PUBLIC',
-              OR: [
-                { startDate: null },
-                { startDate: { lte: now } },
-              ],
-              AND: [
-                { OR: [
-                  { endDate: null },
-                  { endDate: { gte: now } },
-                ]},
-              ],
-            },
-            select: { id: true, acceptedPlatforms: true },
-          });
-
-          for (const campaign of activePublicCampaigns) {
-            // Check if platform is allowed (if restrictions exist)
-            let canJoin = true;
-            if (campaign.acceptedPlatforms) {
-              const acceptedPlatforms = typeof campaign.acceptedPlatforms === 'string' 
-                ? JSON.parse(campaign.acceptedPlatforms) 
-                : campaign.acceptedPlatforms;
-              
-              if (Array.isArray(acceptedPlatforms) && !acceptedPlatforms.includes('INSTAGRAM')) {
-                canJoin = false;
-              }
+        // Try to auto-join user to campaigns and find the best one to link
+        for (const campaign of activePublicCampaigns) {
+          // Check if platform is allowed (if restrictions exist)
+          let canJoin = true;
+          if (campaign.acceptedPlatforms) {
+            const acceptedPlatforms = typeof campaign.acceptedPlatforms === 'string' 
+              ? JSON.parse(campaign.acceptedPlatforms) 
+              : campaign.acceptedPlatforms;
+            
+            if (Array.isArray(acceptedPlatforms) && !acceptedPlatforms.includes('INSTAGRAM')) {
+              canJoin = false;
             }
+          }
 
-            if (canJoin) {
+          if (canJoin) {
+            // Auto-join if not already a member
+            if (!userCampaignIds.has(campaign.id)) {
               try {
                 await prisma.campaignMember.create({
                   data: {
@@ -1672,50 +1620,19 @@ router.post('/auto', async (req: Request, res: Response) => {
                     campaignId: campaign.id,
                   },
                 });
-                campaignIds.push(campaign.id);
+                userCampaignIds.add(campaign.id);
                 console.log(`[Auto-Join] Auto-joined user ${userId} to campaign ${campaign.id} when submitting`);
-              } catch (error) {
+              } catch (error: any) {
                 // Already a member or other error, continue
-                console.log(`[Auto-Join] Could not join campaign ${campaign.id}:`, error);
+                if (error.code !== 'P2002') { // Ignore unique constraint errors
+                  console.log(`[Auto-Join] Could not join campaign ${campaign.id}:`, error);
+                }
               }
             }
-          }
-        }
 
-        if (campaignIds.length > 0) {
-          // Get the most recent active campaign the user is a member of
-          const activeCampaign = await prisma.campaign.findFirst({
-            where: {
-              id: { in: campaignIds },
-              status: 'ACTIVE',
-              OR: [
-                { startDate: null },
-                { startDate: { lte: now } },
-              ],
-              AND: [
-                { OR: [
-                  { endDate: null },
-                  { endDate: { gte: now } },
-                ]},
-              ],
-            },
-            orderBy: { createdAt: 'desc' },
-            select: { id: true, acceptedPlatforms: true },
-          });
-
-          if (activeCampaign) {
-            // Check if platform is allowed (if restrictions exist)
-            if (activeCampaign.acceptedPlatforms) {
-              const acceptedPlatforms = typeof activeCampaign.acceptedPlatforms === 'string' 
-                ? JSON.parse(activeCampaign.acceptedPlatforms) 
-                : activeCampaign.acceptedPlatforms;
-              
-              if (Array.isArray(acceptedPlatforms) && acceptedPlatforms.includes('INSTAGRAM')) {
-                finalCampaignId = activeCampaign.id;
-              }
-            } else {
-              // No platform restrictions, auto-link
-              finalCampaignId = activeCampaign.id;
+            // Link to the first matching campaign (most recent)
+            if (!finalCampaignId) {
+              finalCampaignId = campaign.id;
             }
           }
         }
