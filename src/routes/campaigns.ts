@@ -4,6 +4,30 @@ import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
 
+// Helper function to fetch Discord username from Discord ID
+async function getDiscordUsername(discordId: string | null): Promise<string | null> {
+  if (!discordId) return null;
+  
+  try {
+    const response = await fetch(`https://discord.com/api/v10/users/${discordId}`, {
+      headers: {
+        'Authorization': `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+      },
+    });
+    
+    if (!response.ok) {
+      console.warn(`Failed to fetch Discord user ${discordId}: ${response.status}`);
+      return null;
+    }
+    
+    const user = await response.json();
+    return user.username || null;
+  } catch (error) {
+    console.error(`Error fetching Discord username for ${discordId}:`, error);
+    return null;
+  }
+}
+
 // Public routes (no auth required)
 router.get('/:id', async (req: Request, res: Response) => {
   try {
