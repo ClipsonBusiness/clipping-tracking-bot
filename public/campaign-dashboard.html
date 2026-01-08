@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campaign Analytics</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .input-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .input-card h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+        .input-card p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        .input-group label {
+            display: block;
+            text-align: left;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .btn {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+        .btn:hover {
+            background: #5568d3;
+        }
+        .dashboard {
+            display: none;
+        }
+        .dashboard.active {
+            display: block;
+        }
+        .nav-bar {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .nav-bar button {
+            background: none;
+            border: none;
+            color: #667eea;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 8px 16px;
+        }
+        .nav-bar button:hover {
+            text-decoration: underline;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #10b981;
+            color: white;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: white;
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .campaign-header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .campaign-header h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        .campaign-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .info-label {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+        .info-value {
+            color: #333;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .platform-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .platform-badge {
+            padding: 6px 12px;
+            background: #f0f0f0;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #333;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .metric-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .metric-card.primary {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+        .metric-card.blue {
+            border-left: 4px solid #3b82f6;
+        }
+        .metric-card.red {
+            border-left: 4px solid #ef4444;
+        }
+        .metric-card.green {
+            border-left: 4px solid #10b981;
+        }
+        .metric-card.yellow {
+            border-left: 4px solid #f59e0b;
+        }
+        .metric-card.purple {
+            border-left: 4px solid #8b5cf6;
+        }
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .metric-card.primary .metric-label {
+            color: rgba(255,255,255,0.9);
+        }
+        .metric-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        .metric-card.primary .metric-value {
+            color: white;
+        }
+        .metric-description {
+            font-size: 12px;
+            color: #999;
+        }
+        .metric-card.primary .metric-description {
+            color: rgba(255,255,255,0.8);
+        }
+        .progress-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+            background: rgba(255,255,255,0.2);
+            margin-left: auto;
+        }
+        .filters {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .filters-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+        .filters-row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .filter-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .filter-select {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+        }
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .content-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .content-card-header {
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .content-platform {
+            padding: 4px 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #666;
+        }
+        .content-status {
+            padding: 4px 8px;
+            background: #10b981;
+            color: white;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .content-thumbnail {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: #f0f0f0;
+        }
+        .content-body {
+            padding: 15px;
+        }
+        .content-creator {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+        .content-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        .content-source {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 12px;
+        }
+        .content-metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .content-metric {
+            text-align: center;
+        }
+        .content-metric-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+        .content-metric-label {
+            font-size: 10px;
+            color: #999;
+        }
+        .content-engagement {
+            text-align: center;
+            padding: 8px;
+            background: #f3f4f6;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+        .content-engagement-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #8b5cf6;
+        }
+        .content-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-secondary {
+            flex: 1;
+            padding: 10px;
+            background: #f0f0f0;
+            color: #333;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .btn-danger {
+            flex: 1;
+            padding: 10px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .accounts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .account-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .account-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .account-platform {
+            padding: 4px 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #666;
+        }
+        .account-verified {
+            padding: 4px 8px;
+            background: #10b981;
+            color: white;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .account-handle {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .account-discord {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 15px;
+        }
+        .account-metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .account-metric {
+            text-align: center;
+        }
+        .account-metric-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #3b82f6;
+        }
+        .account-metric-label {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+        }
+        .account-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Campaign ID Input -->
+    <div class="container">
+        <div class="input-card" id="inputCard">
+            <h1>Campaign Analytics</h1>
+            <p>Enter your campaign ID to view analytics and content</p>
+            <div class="input-group">
+                <label for="campaignId">Campaign ID</label>
+                <input type="text" id="campaignId" placeholder="Enter campaign ID...">
+            </div>
+            <button class="btn" onclick="loadCampaign()">
+                <span>🔍</span>
+                Load Campaign
+            </button>
+        </div>
+
+        <!-- Dashboard -->
+        <div class="dashboard" id="dashboard">
+            <div class="nav-bar">
+                <button onclick="showInput()">← Back to Campaign Input</button>
+                <div>
+                    <span class="status-badge" id="campaignStatus">Active</span>
+                    <button class="btn" style="margin-left: 10px;">Export Active Content</button>
+                </div>
+            </div>
+
+            <div class="campaign-header">
+                <h2 id="campaignName">Campaign Name</h2>
+                <div class="campaign-info">
+                    <div class="info-item">
+                        <span class="info-label">Campaign ID</span>
+                        <span class="info-value" id="campaignIdDisplay">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Start</span>
+                        <span class="info-value" id="campaignStart">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">End</span>
+                        <span class="info-value" id="campaignEnd">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Target</span>
+                        <span class="info-value" id="campaignTarget">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Enabled Platforms</span>
+                        <div class="platform-badges" id="campaignPlatforms"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('overview')">Overview</button>
+                <button class="tab" onclick="switchTab('analytics')">Analytics</button>
+                <button class="tab" onclick="switchTab('content')">Content</button>
+                <button class="tab" onclick="switchTab('accounts')">Accounts</button>
+            </div>
+
+            <!-- Overview Tab -->
+            <div class="tab-content active" id="overviewTab">
+                <div class="metrics-grid">
+                    <div class="metric-card primary">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <div class="metric-label">Target Views Attainment</div>
+                                <div class="metric-value" id="targetAttainment">0%</div>
+                                <div class="metric-description" id="targetDescription">0 / 0 views</div>
+                            </div>
+                            <div class="progress-circle" id="progressCircle">0%</div>
+                        </div>
+                    </div>
+                    <div class="metric-card blue">
+                        <div class="metric-label">Total Views</div>
+                        <div class="metric-value" id="totalViews">0</div>
+                        <div class="metric-description">Across all content</div>
+                    </div>
+                    <div class="metric-card red">
+                        <div class="metric-label">Total Likes</div>
+                        <div class="metric-value" id="totalLikes">0</div>
+                        <div class="metric-description">Total engagement</div>
+                    </div>
+                    <div class="metric-card green">
+                        <div class="metric-label">Total Comments</div>
+                        <div class="metric-value" id="totalComments">0</div>
+                        <div class="metric-description">Community interaction</div>
+                    </div>
+                    <div class="metric-card yellow">
+                        <div class="metric-label">Total Shares</div>
+                        <div class="metric-value" id="totalShares">0</div>
+                        <div class="metric-description">Viral potential</div>
+                    </div>
+                    <div class="metric-card purple">
+                        <div class="metric-label">Avg Engagement</div>
+                        <div class="metric-value" id="avgEngagement">0%</div>
+                        <div class="metric-description">Performance metric</div>
+                    </div>
+                    <div class="metric-card" style="border-left: 4px solid #ec4899;">
+                        <div class="metric-label">Content Count</div>
+                        <div class="metric-value" id="contentCount">0</div>
+                        <div class="metric-description">Total pieces</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Tab -->
+            <div class="tab-content" id="analyticsTab">
+                <div class="loading">Analytics coming soon...</div>
+            </div>
+
+            <!-- Content Tab -->
+            <div class="tab-content" id="contentTab">
+                <div class="filters">
+                    <div class="filters-header">
+                        <span>🔍</span>
+                        Filter & Sort Content
+                    </div>
+                    <div class="filters-row">
+                        <input type="text" class="filter-input" id="contentSearch" placeholder="Search creators, platforms..." onkeyup="filterContent()">
+                        <select class="filter-select" id="platformFilter" onchange="filterContent()">
+                            <option value="all">All Platforms</option>
+                            <option value="YOUTUBE">YouTube</option>
+                            <option value="TIKTOK">TikTok</option>
+                            <option value="INSTAGRAM">Instagram</option>
+                        </select>
+                        <select class="filter-select" id="statusFilter" onchange="filterContent()">
+                            <option value="all">All Status</option>
+                            <option value="PENDING">Pending</option>
+                            <option value="APPROVED">Approved</option>
+                            <option value="REJECTED">Rejected</option>
+                        </select>
+                        <select class="filter-select" id="sortFilter" onchange="filterContent()">
+                            <option value="date-desc">Upload Date (Newest)</option>
+                            <option value="date-asc">Upload Date (Oldest)</option>
+                            <option value="views-desc">Views (High to Low)</option>
+                            <option value="views-asc">Views (Low to High)</option>
+                        </select>
+                    </div>
+                    <div style="margin-top: 15px; color: #666; font-size: 14px;">
+                        Showing <span id="contentCountDisplay">0</span> of <span id="contentTotalDisplay">0</span> items
+                    </div>
+                </div>
+                <div class="content-grid" id="contentGrid">
+                    <div class="loading">Loading content...</div>
+                </div>
+            </div>
+
+            <!-- Accounts Tab -->
+            <div class="tab-content" id="accountsTab">
+                <div class="metrics-grid" style="margin-bottom: 30px;">
+                    <div class="metric-card">
+                        <div class="metric-label">Total Accounts</div>
+                        <div class="metric-value" id="totalAccounts">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Verified Accounts</div>
+                        <div class="metric-value" id="verifiedAccounts">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Platforms</div>
+                        <div class="metric-value" id="platformCount">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Total Views</div>
+                        <div class="metric-value" id="accountsTotalViews">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Total Submissions</div>
+                        <div class="metric-value" id="totalSubmissions">0</div>
+                    </div>
+                </div>
+                <div class="filters" style="margin-bottom: 20px;">
+                    <div class="filters-row">
+                        <input type="text" class="filter-input" id="accountSearch" placeholder="Search accounts..." onkeyup="filterAccounts()">
+                        <select class="filter-select" id="accountPlatformFilter" onchange="filterAccounts()">
+                            <option value="all">All Platforms</option>
+                        </select>
+                        <select class="filter-select" id="accountTypeFilter" onchange="filterAccounts()">
+                            <option value="all">All Accounts</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="accounts-grid" id="accountsGrid">
+                    <div class="loading">Loading accounts...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentCampaignId = null;
+        let allSubmissions = [];
+        let allAccounts = [];
+        let campaignData = null;
+
+        // Get auth token from localStorage
+        function getAuthToken() {
+            return localStorage.getItem('authToken');
+        }
+
+        // Show input card, hide dashboard
+        function showInput() {
+            document.getElementById('inputCard').style.display = 'block';
+            document.getElementById('dashboard').classList.remove('active');
+            currentCampaignId = null;
+        }
+
+        // Load campaign data
+        async function loadCampaign() {
+            const campaignId = document.getElementById('campaignId').value.trim();
+            if (!campaignId) {
+                alert('Please enter a campaign ID');
+                return;
+            }
+
+            currentCampaignId = campaignId;
+            document.getElementById('inputCard').style.display = 'none';
+            document.getElementById('dashboard').classList.add('active');
+
+            try {
+                // Load campaign details (public endpoint, no auth required)
+                const campaignResponse = await fetch(`/api/campaigns/${campaignId}`);
+
+                if (!campaignResponse.ok) {
+                    throw new Error('Campaign not found');
+                }
+
+                const campaignResult = await campaignResponse.json();
+                campaignData = campaignResult.campaign;
+
+                // Load analytics
+                await loadAnalytics();
+
+                // Load content
+                await loadContent();
+
+                // Load accounts
+                await loadAccounts();
+
+                // Update campaign header
+                updateCampaignHeader();
+            } catch (error) {
+                alert('Failed to load campaign: ' + error.message);
+                showInput();
+            }
+        }
+
+        // Update campaign header
+        function updateCampaignHeader() {
+            document.getElementById('campaignName').textContent = campaignData.name;
+            document.getElementById('campaignIdDisplay').textContent = campaignData.id;
+            document.getElementById('campaignStart').textContent = campaignData.startDate 
+                ? new Date(campaignData.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                : 'N/A';
+            document.getElementById('campaignEnd').textContent = campaignData.endDate
+                ? new Date(campaignData.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                : 'N/A';
+            
+            // Target views
+            const target = campaignData.targetSubmissions || campaignData.minViewsPerClip || 0;
+            document.getElementById('campaignTarget').textContent = target.toLocaleString() + ' views';
+
+            // Platforms
+            const platformsDiv = document.getElementById('campaignPlatforms');
+            platformsDiv.innerHTML = '';
+            if (campaignData.acceptedPlatforms) {
+                const platforms = typeof campaignData.acceptedPlatforms === 'string' 
+                    ? JSON.parse(campaignData.acceptedPlatforms) 
+                    : campaignData.acceptedPlatforms;
+                platforms.forEach(platform => {
+                    const badge = document.createElement('span');
+                    badge.className = 'platform-badge';
+                    badge.textContent = platform;
+                    platformsDiv.appendChild(badge);
+                });
+            }
+        }
+
+        // Load analytics
+        async function loadAnalytics() {
+            try {
+                const response = await fetch(`/api/campaigns/${currentCampaignId}/analytics`);
+
+                if (!response.ok) throw new Error('Failed to load analytics');
+
+                const data = await response.json();
+                const metrics = data.metrics;
+
+                // Update metrics
+                document.getElementById('totalViews').textContent = metrics.totalViews.toLocaleString();
+                document.getElementById('totalLikes').textContent = metrics.totalLikes.toLocaleString();
+                document.getElementById('totalComments').textContent = metrics.totalComments.toLocaleString();
+                document.getElementById('totalShares').textContent = metrics.totalShares.toLocaleString();
+                document.getElementById('avgEngagement').textContent = metrics.avgEngagement.toFixed(2) + '%';
+                document.getElementById('contentCount').textContent = metrics.contentCount.toLocaleString();
+
+                // Target attainment
+                const attainment = metrics.targetAttainment.toFixed(1);
+                document.getElementById('targetAttainment').textContent = attainment + '%';
+                document.getElementById('progressCircle').textContent = attainment + '%';
+                
+                const target = campaignData.targetSubmissions || (campaignData.minViewsPerClip || 0) * Math.max(1, metrics.contentCount);
+                document.getElementById('targetDescription').textContent = 
+                    `${metrics.totalViews.toLocaleString()} / ${target.toLocaleString()} views`;
+            } catch (error) {
+                console.error('Failed to load analytics:', error);
+            }
+        }
+
+        // Load content
+        async function loadContent(page = 1) {
+            try {
+                const response = await fetch(`/api/campaigns/${currentCampaignId}/submissions?page=${page}&limit=100`);
+
+                if (!response.ok) throw new Error('Failed to load content');
+
+                const data = await response.json();
+                allSubmissions = data.submissions;
+                
+                document.getElementById('contentTotalDisplay').textContent = data.pagination.total;
+                renderContent(allSubmissions);
+            } catch (error) {
+                console.error('Failed to load content:', error);
+                document.getElementById('contentGrid').innerHTML = '<div class="error">Failed to load content</div>';
+            }
+        }
+
+        // Render content
+        function renderContent(submissions) {
+            const grid = document.getElementById('contentGrid');
+            grid.innerHTML = '';
+
+            if (submissions.length === 0) {
+                grid.innerHTML = '<div class="loading">No content found</div>';
+                return;
+            }
+
+            submissions.forEach(submission => {
+                const card = document.createElement('div');
+                card.className = 'content-card';
+                
+                const engagement = submission.latestViews > 0
+                    ? ((submission.latestLikes + submission.latestComments + submission.latestShares) / submission.latestViews * 100).toFixed(2)
+                    : '0.00';
+
+                card.innerHTML = `
+                    <div class="content-card-header">
+                        <span class="content-platform">${submission.platform}</span>
+                        <span class="content-status">${submission.status}</span>
+                    </div>
+                    <div class="content-body">
+                        <div class="content-creator">${submission.creatorHandle || submission.userName || submission.userEmail}</div>
+                        <div class="content-creator" style="font-size: 11px; color: #999;">Discord: ${submission.discordUsername || 'N/A'}</div>
+                        <div class="content-title">${extractVideoTitle(submission.canonicalUrl)}</div>
+                        <div class="content-source">Source: ${submission.canonicalUrl ? new URL(submission.canonicalUrl).hostname : 'N/A'}</div>
+                        <div class="content-metrics">
+                            <div class="content-metric">
+                                <div class="content-metric-value">${submission.latestViews.toLocaleString()}</div>
+                                <div class="content-metric-label">Views</div>
+                            </div>
+                            <div class="content-metric">
+                                <div class="content-metric-value">${submission.latestLikes.toLocaleString()}</div>
+                                <div class="content-metric-label">Likes</div>
+                            </div>
+                            <div class="content-metric">
+                                <div class="content-metric-value">${submission.latestComments.toLocaleString()}</div>
+                                <div class="content-metric-label">Comments</div>
+                            </div>
+                            <div class="content-metric">
+                                <div class="content-metric-value">${submission.latestShares.toLocaleString()}</div>
+                                <div class="content-metric-label">Shares</div>
+                            </div>
+                        </div>
+                        <div class="content-engagement">
+                            <div class="content-engagement-value">Engagement: ${engagement}%</div>
+                        </div>
+                        <div style="color: #666; font-size: 11px; margin-bottom: 12px;">
+                            Uploaded: ${new Date(submission.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            ${submission.updatedAt && submission.updatedAt !== submission.createdAt 
+                                ? ' • Updated: ' + new Date(submission.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                                : ''}
+                        </div>
+                        <div class="content-actions">
+                            <button class="btn-secondary" onclick="window.open('${submission.canonicalUrl}', '_blank')">
+                                <span>↗</span>
+                                View Original Video
+                            </button>
+                            <button class="btn-danger" onclick="removeFromCampaign('${submission.id}')">
+                                <span>🗑️</span>
+                                Remove from Campaign
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            document.getElementById('contentCountDisplay').textContent = submissions.length;
+        }
+
+        // Extract video title from URL (simplified)
+        function extractVideoTitle(url) {
+            if (!url) return 'Untitled';
+            try {
+                const urlObj = new URL(url);
+                const pathParts = urlObj.pathname.split('/').filter(p => p);
+                return pathParts[pathParts.length - 1] || 'Video';
+            } catch {
+                return 'Video';
+            }
+        }
+
+        // Filter content
+        function filterContent() {
+            const search = document.getElementById('contentSearch').value.toLowerCase();
+            const platform = document.getElementById('platformFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            const sort = document.getElementById('sortFilter').value;
+
+            let filtered = [...allSubmissions];
+
+            // Apply filters
+            if (search) {
+                filtered = filtered.filter(s => 
+                    (s.creatorHandle && s.creatorHandle.toLowerCase().includes(search)) ||
+                    (s.userName && s.userName.toLowerCase().includes(search)) ||
+                    (s.userEmail && s.userEmail.toLowerCase().includes(search)) ||
+                    (s.platform && s.platform.toLowerCase().includes(search))
+                );
+            }
+
+            if (platform !== 'all') {
+                filtered = filtered.filter(s => s.platform === platform);
+            }
+
+            if (status !== 'all') {
+                filtered = filtered.filter(s => s.status === status);
+            }
+
+            // Apply sorting
+            filtered.sort((a, b) => {
+                if (sort === 'date-desc') return new Date(b.createdAt) - new Date(a.createdAt);
+                if (sort === 'date-asc') return new Date(a.createdAt) - new Date(b.createdAt);
+                if (sort === 'views-desc') return (b.latestViews || 0) - (a.latestViews || 0);
+                if (sort === 'views-asc') return (a.latestViews || 0) - (b.latestViews || 0);
+                return 0;
+            });
+
+            renderContent(filtered);
+        }
+
+        // Remove submission from campaign
+        async function removeFromCampaign(submissionId) {
+            if (!confirm('Are you sure you want to remove this content from the campaign?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/campaigns/${currentCampaignId}/submissions/${submissionId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`,
+                    },
+                });
+
+                if (!response.ok) throw new Error('Failed to remove content');
+
+                // Reload content
+                await loadContent();
+                await loadAnalytics();
+            } catch (error) {
+                alert('Failed to remove content: ' + error.message);
+            }
+        }
+
+        // Load accounts
+        async function loadAccounts() {
+            try {
+                const response = await fetch(`/api/campaigns/${currentCampaignId}/accounts`);
+
+                if (!response.ok) throw new Error('Failed to load accounts');
+
+                const data = await response.json();
+                allAccounts = data.accounts;
+
+                // Update statistics
+                document.getElementById('totalAccounts').textContent = data.statistics.totalAccounts;
+                document.getElementById('verifiedAccounts').textContent = data.statistics.verifiedAccounts;
+                document.getElementById('platformCount').textContent = data.statistics.platforms;
+                document.getElementById('accountsTotalViews').textContent = data.statistics.totalViews.toLocaleString();
+                document.getElementById('totalSubmissions').textContent = data.statistics.totalSubmissions;
+
+                // Update platform filter
+                const platformFilter = document.getElementById('accountPlatformFilter');
+                platformFilter.innerHTML = '<option value="all">All Platforms</option>';
+                Object.keys(data.platformBreakdown).forEach(platform => {
+                    const option = document.createElement('option');
+                    option.value = platform;
+                    option.textContent = platform;
+                    platformFilter.appendChild(option);
+                });
+
+                renderAccounts(allAccounts);
+            } catch (error) {
+                console.error('Failed to load accounts:', error);
+                document.getElementById('accountsGrid').innerHTML = '<div class="error">Failed to load accounts</div>';
+            }
+        }
+
+        // Render accounts
+        function renderAccounts(accounts) {
+            const grid = document.getElementById('accountsGrid');
+            grid.innerHTML = '';
+
+            if (accounts.length === 0) {
+                grid.innerHTML = '<div class="loading">No accounts found</div>';
+                return;
+            }
+
+            accounts.forEach(account => {
+                const card = document.createElement('div');
+                card.className = 'account-card';
+                
+                card.innerHTML = `
+                    <div class="account-header">
+                        <span class="account-platform">${account.platform}</span>
+                        <span class="account-verified">Verified</span>
+                    </div>
+                    <div class="account-handle">${account.handle}</div>
+                    <div class="account-discord">Discord: ${account.discordUsername || 'N/A'}</div>
+                    <div class="account-metrics">
+                        <div class="account-metric">
+                            <div class="account-metric-value">${account.totalViews.toLocaleString()}</div>
+                            <div class="account-metric-label">Total Views</div>
+                        </div>
+                        <div class="account-metric">
+                            <div class="account-metric-value">${account.submissionCount}</div>
+                            <div class="account-metric-label">Submissions</div>
+                        </div>
+                    </div>
+                    <div style="text-align: center; color: #8b5cf6; font-size: 12px; margin-bottom: 15px;">
+                        ${account.avgViews.toLocaleString()} avg views/submission
+                    </div>
+                    <div class="account-actions">
+                        <button class="btn-secondary" onclick="editAccount('${account.id}')">
+                            <span>✏️</span>
+                            Edit
+                        </button>
+                        <button class="btn-secondary" onclick="deleteAccount('${account.id}')">
+                            <span>🗑️</span>
+                            Delete
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Filter accounts
+        function filterAccounts() {
+            const search = document.getElementById('accountSearch').value.toLowerCase();
+            const platform = document.getElementById('accountPlatformFilter').value;
+
+            let filtered = [...allAccounts];
+
+            if (search) {
+                filtered = filtered.filter(a => 
+                    a.handle.toLowerCase().includes(search) ||
+                    (a.discordUsername && a.discordUsername.toLowerCase().includes(search)) ||
+                    (a.userName && a.userName.toLowerCase().includes(search))
+                );
+            }
+
+            if (platform !== 'all') {
+                filtered = filtered.filter(a => a.platform === platform);
+            }
+
+            renderAccounts(filtered);
+        }
+
+        // Switch tabs
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabName + 'Tab').classList.add('active');
+        }
+
+        // Placeholder functions
+        function editAccount(accountId) {
+            alert('Edit account functionality coming soon');
+        }
+
+        function deleteAccount(accountId) {
+            if (confirm('Are you sure you want to delete this account?')) {
+                alert('Delete account functionality coming soon');
+            }
+        }
+
+        // Allow Enter key to load campaign
+        document.getElementById('campaignId').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                loadCampaign();
+            }
+        });
+    </script>
+</body>
+</html>
+

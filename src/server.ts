@@ -28,6 +28,11 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(process.cwd(), 'public', 'index.html'));
 });
 
+// Campaign dashboard route
+app.get('/campaign-dashboard', (req, res) => {
+  res.sendFile(path.join(process.cwd(), 'public', 'campaign-dashboard.html'));
+});
+
 // Initialize BullMQ queue (optional - won't crash if Redis unavailable)
 let queue: any = null;
 let metricsWorker: any = null;
@@ -121,6 +126,23 @@ app.listen(PORT, '0.0.0.0', async () => {
     }
   } else {
     console.warn('⚠️ Metrics scheduler disabled (REDIS_URL not set)');
+  }
+
+  // Initialize Discord bot (non-blocking)
+  try {
+    import('./bot/discordBot').then(module => {
+      module.initializeDiscordBot().then(bot => {
+        if (bot) {
+          console.log('✅ Discord bot initialized successfully');
+        }
+      }).catch(err => {
+        console.warn('⚠️ Failed to initialize Discord bot:', err.message);
+      });
+    }).catch(err => {
+      console.warn('⚠️ Failed to load Discord bot module:', err.message);
+    });
+  } catch (error: any) {
+    console.warn('⚠️ Failed to initialize Discord bot:', error.message);
   }
 });
 
