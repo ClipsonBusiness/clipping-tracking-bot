@@ -5,7 +5,7 @@ import { authMiddleware } from '../middleware/auth';
 const router = Router();
 
 // Helper function to fetch Discord username from Discord ID
-async function getDiscordUsername(discordId: string | null): Promise<string | null> {
+const getDiscordUsername = async (discordId: string | null): Promise<string | null> => {
   if (!discordId) return null;
   
   try {
@@ -26,7 +26,7 @@ async function getDiscordUsername(discordId: string | null): Promise<string | nu
     console.error(`Error fetching Discord username for ${discordId}:`, error);
     return null;
   }
-}
+};
 
 // Public routes (no auth required)
 router.get('/:id', async (req: Request, res: Response) => {
