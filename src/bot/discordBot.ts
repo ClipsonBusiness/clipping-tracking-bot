@@ -2053,9 +2053,53 @@ client.on('interactionCreate', async (interaction: any) => {
         await interaction.message.edit({ components: [] });
       } else if (interaction.customId.startsWith('delete_campaign_')) {
         try {
+          // Immediately disable the button and update message to show it's being deleted
+          const campaignId = interaction.customId.replace('delete_campaign_', '');
+          
+          // Extract campaign name from button label for immediate feedback
+          let campaignName = 'Campaign';
+          if (interaction.message.components) {
+            for (const row of interaction.message.components) {
+              if ('components' in row && Array.isArray(row.components)) {
+                for (const component of row.components) {
+                  if (component.type === 2 && 'customId' in component && component.customId === interaction.customId) {
+                    const buttonLabel = (component as any).label || '';
+                    campaignName = buttonLabel.replace('🗑️ ', '').trim() || 'Campaign';
+                    break;
+                  }
+                }
+              }
+            }
+          }
+          
+          // Immediately remove the button from the message
+          try {
+            const components: ActionRowBuilder<ButtonBuilder>[] = [];
+            for (const row of interaction.message.components) {
+              const newRow = new ActionRowBuilder<ButtonBuilder>();
+              if ('components' in row && Array.isArray(row.components)) {
+                for (const component of row.components) {
+                  if (component.type === 2 && 'customId' in component && component.customId !== interaction.customId) {
+                    newRow.addComponents(ButtonBuilder.from(component as any));
+                  }
+                }
+              }
+              if (newRow.components.length > 0) {
+                components.push(newRow);
+              }
+            }
+            
+            // Update message immediately to remove the button
+            await interaction.message.edit({ 
+              components: components.length > 0 ? components : [],
+            });
+          } catch (editError) {
+            console.error('[Delete Campaign] Error removing button immediately:', editError);
+          }
+          
+          // Defer reply for the confirmation message
           await interaction.deferReply({ ephemeral: true });
           
-          const campaignId = interaction.customId.replace('delete_campaign_', '');
           console.log(`[Delete Campaign] Attempting to delete campaign with ID: ${campaignId}`);
           
           // Check if user is admin
@@ -2084,83 +2128,50 @@ client.on('interactionCreate', async (interaction: any) => {
             select: { id: true, name: true, status: true, _count: { select: { submissions: true, members: true } } },
           });
 
-          // If not found by ID, try to extract name from button label and find by name
-          if (!campaign && interaction.message.components) {
-            console.log(`[Delete Campaign] Campaign not found by ID, trying to find by name from button label`);
-            // Try to find the button and extract the campaign name
-            for (const row of interaction.message.components) {
-              if ('components' in row && Array.isArray(row.components)) {
-                for (const component of row.components) {
-                  if (component.type === 2 && 'customId' in component && component.customId === interaction.customId) {
-                    // Extract campaign name from button label (format: 🗑️ CampaignName)
-                    const buttonLabel = (component as any).label || '';
-                    const campaignName = buttonLabel.replace('🗑️ ', '').trim();
-                    console.log(`[Delete Campaign] Extracted campaign name from button: ${campaignName}`);
-                    
-                    if (campaignName) {
-                      campaign = await prisma.campaign.findFirst({
-                        where: { name: campaignName },
-                        select: { id: true, name: true, status: true, _count: { select: { submissions: true, members: true } } },
-                      });
-                      if (campaign) {
-                        console.log(`[Delete Campaign] Found campaign by name: ${campaign.name} (ID: ${campaign.id})`);
-                      }
-                    }
-                    break;
-                  }
-                }
-              }
+          // If not found by ID, try to find by name
+          if (!campaign && campaignName && campaignName !== 'Campaign') {
+            console.log(`[Delete Campaign] Campaign not found by ID, trying to find by name: ${campaignName}`);
+            campaign = await prisma.campaign.findFirst({
+              where: { name: campaignName },
+              select: { id: true, name: true, status: true, _count: { select: { submissions: true, members: true } } },
+            });
+            if (campaign) {
+              console.log(`[Delete Campaign] Found campaign by name: ${campaign.name} (ID: ${campaign.id})`);
             }
           }
 
           if (!campaign) {
-            console.error(`[Delete Campaign] Campaign not found. ID: ${campaignId}`);
+            console.error(`[Delete Campaign] Campaign not found. ID: ${campaignId}, Name: ${campaignName}`);
             return interaction.editReply({ 
-              content: `❌ Campaign not found. ID: ${campaignId}\n\nPlease try using \`/check-campaigns\` again to refresh the list.`,
+              content: `❌ Campaign not found.\n\nPlease try using \`/check-campaigns\` again to refresh the list.`,
             });
           }
 
           // Delete the campaign (cascade will handle related records)
-          // Use the campaign ID we found (might be different from the one in customId)
           await prisma.campaign.delete({
             where: { id: campaign.id },
           });
           
           console.log(`[Delete Campaign] Successfully deleted campaign: ${campaign.name} (ID: ${campaign.id})`);
 
-          // Update the message to remove the delete button for this campaign
+          // Update embed to show deletion confirmation
           try {
             const embed = interaction.message.embeds[0];
             if (embed) {
-              const newEmbed = EmbedBuilder.from(embed)
-                .setDescription(`✅ Campaign **${campaign.name}** has been deleted.\n\n${embed.description || ''}`)
-                .setColor(0x00ff00);
+              const newEmbed = EmbedBuilder.from(embed);
               
-              // Remove the button for this campaign
-              const components: ActionRowBuilder<ButtonBuilder>[] = [];
-              for (const row of interaction.message.components) {
-                const newRow = new ActionRowBuilder<ButtonBuilder>();
-                // Type guard: check if row has components property
-                if ('components' in row && Array.isArray(row.components)) {
-                  for (const component of row.components) {
-                    if (component.type === 2 && 'customId' in component && component.customId !== interaction.customId) {
-                      newRow.addComponents(ButtonBuilder.from(component as any));
-                    }
-                  }
-                }
-                if (newRow.components.length > 0) {
-                  components.push(newRow);
-                }
-              }
-
+              // Update description to show deleted campaign
+              const currentDescription = embed.description || '';
+              const deletedNote = `✅ **${campaign.name}** has been deleted.\n\n`;
+              newEmbed.setDescription(deletedNote + currentDescription);
+              
               await interaction.message.edit({ 
                 embeds: [newEmbed],
-                components: components.length > 0 ? components : [],
               });
             }
           } catch (editError) {
-            console.error('[Delete Campaign] Error updating message:', editError);
-            // Continue even if message update fails
+            console.error('[Delete Campaign] Error updating embed:', editError);
+            // Continue even if embed update fails
           }
 
           return interaction.editReply({ 
