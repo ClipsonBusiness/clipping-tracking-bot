@@ -121,6 +121,60 @@ async function assignClipperRole(guildId: string, userId: string): Promise<boole
 // Command handlers
 const commands = {
   // Clipper commands
+  async start(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply({ ephemeral: true });
+
+    const embed = new EmbedBuilder()
+      .setColor(0x5865f2)
+      .setTitle('🚀 Welcome to ClipSon Tracking Bot!')
+      .setDescription('Here\'s how to get started and use the bot:')
+      .addFields(
+        {
+          name: '📋 Step 1: Verify Your Account',
+          value: 'Use `/verify <platform> <username>` to verify your social media account.\n' +
+                 '**Example:** `/verify youtube @yourchannel`\n' +
+                 'Supported platforms: YouTube, TikTok, Instagram',
+          inline: false,
+        },
+        {
+          name: '✅ Step 2: Complete Verification',
+          value: 'After running `/verify`, you\'ll receive a verification code.\n' +
+                 'Add this code to your social media bio/description, then click the **"Check Verification"** button in the approval channel.',
+          inline: false,
+        },
+        {
+          name: '📤 Step 3: Submit Content',
+          value: 'Once verified, use `/submit-clip <url>` to submit your content.\n' +
+                 '**Example:** `/submit-clip https://youtube.com/watch?v=...`\n' +
+                 'The bot will automatically detect the platform!',
+          inline: false,
+        },
+        {
+          name: '📊 View Your Stats',
+          value: 'Use `/clipper-stats` to see your total views, likes, comments, shares, and estimated payout.',
+          inline: false,
+        },
+        {
+          name: '🏆 Leaderboard',
+          value: 'Use `/leaderboard [campaign]` to see top clippers ranked by views.',
+          inline: false,
+        },
+        {
+          name: '👑 Admin Commands',
+          value: '**Admins only:**\n' +
+                 '• `/setup` - Set up Discord channels\n' +
+                 '• `/admin-campaign` - Create, edit, or delete campaigns\n' +
+                 '• `/check-campaigns` - View all campaigns\n' +
+                 '• `/admin-campaign-stats` - View campaign statistics',
+          inline: false,
+        },
+      )
+      .setFooter({ text: 'Need help? Contact an admin or check the documentation.' })
+      .setTimestamp();
+
+    await interaction.editReply({ embeds: [embed] });
+  },
+
   async verify(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply({ ephemeral: true });
 
