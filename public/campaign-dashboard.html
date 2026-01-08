@@ -714,10 +714,15 @@
                 const campaignResponse = await fetch(`/api/campaigns/${campaignId}`);
 
                 if (!campaignResponse.ok) {
-                    throw new Error('Campaign not found');
+                    const errorData = await campaignResponse.json().catch(() => ({}));
+                    const errorMessage = errorData.error || errorData.message || 'Campaign not found';
+                    throw new Error(`${errorMessage} (Status: ${campaignResponse.status})`);
                 }
 
                 const campaignResult = await campaignResponse.json();
+                if (!campaignResult.campaign) {
+                    throw new Error('Invalid response from server');
+                }
                 campaignData = campaignResult.campaign;
 
                 // Load analytics
@@ -1095,6 +1100,16 @@
         // Allow Enter key to load campaign
         document.getElementById('campaignId').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
+                loadCampaign();
+            }
+        });
+
+        // Check for campaign ID in URL query parameter
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const campaignIdFromUrl = urlParams.get('id');
+            if (campaignIdFromUrl) {
+                document.getElementById('campaignId').value = campaignIdFromUrl;
                 loadCampaign();
             }
         });
