@@ -1,3 +1,4 @@
+// @ts-ignore - discord.js types may not be available during build
 import {
   Client,
   GatewayIntentBits,
