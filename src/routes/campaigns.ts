@@ -168,6 +168,7 @@ router.get('/:id/submissions', async (req: Request, res: Response) => {
               id: true,
               email: true,
               username: true,
+              discordId: true,
             },
           },
         },
@@ -188,13 +189,30 @@ router.get('/:id/submissions', async (req: Request, res: Response) => {
       },
     });
 
+    // Fetch Discord usernames for all users with discordId
+    const usersWithDiscord = submissions
+      .map(s => s.user)
+      .filter((u: any) => u && u.discordId)
+      .map((u: any) => u.discordId);
+    
+    const uniqueDiscordIds = [...new Set(usersWithDiscord)];
+    const discordUsernameMap = new Map<string, string | null>();
+    
+    // Fetch all Discord usernames in parallel
+    await Promise.all(
+      uniqueDiscordIds.map(async (discordId) => {
+        const username = await getDiscordUsername(discordId);
+        discordUsernameMap.set(discordId, username);
+      })
+    );
+
     const submissionsWithAccounts = submissions.map((submission: any) => {
       const userAccounts = socialAccounts.filter(sa => sa.userId === submission.userId);
       const accountHandle = userAccounts.find(sa => sa.platform === submission.platform)?.handle || null;
       
       // Get discordId from user if available
       const user = submission.user || {};
-      const discordUsername = null; // Will be fetched separately if needed
+      const discordUsername = user.discordId ? discordUsernameMap.get(user.discordId) || null : null;
 
       return {
         id: submission.id,
@@ -255,10 +273,28 @@ router.get('/:id/accounts', async (req: Request, res: Response) => {
             id: true,
             email: true,
             username: true,
+            discordId: true,
           },
         },
       },
     });
+
+    // Fetch Discord usernames for all users with discordId
+    const usersWithDiscord = socialAccounts
+      .map((a: any) => a.user)
+      .filter((u: any) => u && u.discordId)
+      .map((u: any) => u.discordId);
+    
+    const uniqueDiscordIds = [...new Set(usersWithDiscord)];
+    const discordUsernameMap = new Map<string, string | null>();
+    
+    // Fetch all Discord usernames in parallel
+    await Promise.all(
+      uniqueDiscordIds.map(async (discordId) => {
+        const username = await getDiscordUsername(discordId);
+        discordUsernameMap.set(discordId, username);
+      })
+    );
 
     const accountStats = await Promise.all(
       socialAccounts.map(async (account: any) => {
@@ -279,6 +315,7 @@ router.get('/:id/accounts', async (req: Request, res: Response) => {
         const avgViews = submissionCount > 0 ? Math.round(totalViews / submissionCount) : 0;
 
         const user = account.user || {};
+        const discordUsername = user.discordId ? discordUsernameMap.get(user.discordId) || null : null;
         
         return {
           id: account.id,
@@ -286,7 +323,7 @@ router.get('/:id/accounts', async (req: Request, res: Response) => {
           handle: account.handle,
           profileUrl: account.profileUrl,
           verifiedAt: account.verifiedAt,
-          discordUsername: null, // Will be fetched separately if needed
+          discordUsername,
           userEmail: user.email || null,
           userName: user.username || null,
           totalViews,
