@@ -1317,7 +1317,7 @@ router.post('/auto', async (req: Request, res: Response) => {
       // This ensures seamless flow: users are added to campaigns automatically when submitting
       const now = new Date();
       
-      console.log(`[Submission] Processing Instagram submission for user ${userId}, provided campaignId: ${campaignId || 'none'}`);
+      console.log(`[Submission] Processing TikTok submission for user ${userId}, provided campaignId: ${campaignId || 'none'}`);
       
       // Get all active public campaigns
       const activePublicCampaigns = await prisma.campaign.findMany({
@@ -1335,9 +1335,11 @@ router.post('/auto', async (req: Request, res: Response) => {
             ]},
           ],
         },
-        select: { id: true, acceptedPlatforms: true },
+        select: { id: true, name: true, acceptedPlatforms: true },
         orderBy: { createdAt: 'desc' }, // Most recent first
       });
+
+      console.log(`[Submission] Found ${activePublicCampaigns.length} active public campaigns`);
 
       let finalCampaignId = campaignId || null;
       
@@ -1350,6 +1352,8 @@ router.post('/auto', async (req: Request, res: Response) => {
         });
         const userCampaignIds = new Set(userMemberships.map(m => m.campaignId));
 
+        console.log(`[Submission] User is already a member of ${userCampaignIds.size} campaigns`);
+
         // Try to auto-join user to campaigns and find the best one to link
         for (const campaign of activePublicCampaigns) {
           // Check if platform is allowed (if restrictions exist)
@@ -1361,6 +1365,7 @@ router.post('/auto', async (req: Request, res: Response) => {
             
             if (Array.isArray(acceptedPlatforms) && !acceptedPlatforms.includes('TIKTOK')) {
               canJoin = false;
+              console.log(`[Submission] Campaign ${campaign.name} (${campaign.id}) does not accept TIKTOK`);
             }
           }
 
@@ -1375,11 +1380,11 @@ router.post('/auto', async (req: Request, res: Response) => {
                   },
                 });
                 userCampaignIds.add(campaign.id);
-                console.log(`[Auto-Join] Auto-joined user ${userId} to campaign ${campaign.id} when submitting`);
+                console.log(`[Auto-Join] ✅ Auto-joined user ${userId} to campaign ${campaign.name} (${campaign.id}) when submitting`);
               } catch (error: any) {
                 // Already a member or other error, continue
                 if (error.code !== 'P2002') { // Ignore unique constraint errors
-                  console.log(`[Auto-Join] Could not join campaign ${campaign.id}:`, error);
+                  console.error(`[Auto-Join] ❌ Could not join campaign ${campaign.id}:`, error);
                 }
               }
             }
@@ -1387,13 +1392,17 @@ router.post('/auto', async (req: Request, res: Response) => {
             // Link to the first matching campaign (most recent)
             if (!finalCampaignId) {
               finalCampaignId = campaign.id;
+              console.log(`[Submission] ✅ Linked submission to campaign ${campaign.name} (${campaign.id})`);
             }
           }
         }
+      } else if (finalCampaignId) {
+        console.log(`[Submission] Using provided campaignId: ${finalCampaignId}`);
+      } else {
+        console.log(`[Submission] ⚠️ No active campaigns found to link submission`);
       }
 
       // Create submission
-      const now = new Date();
       const submission = await getPrismaClient().submission.create({
         data: {
           userId,
@@ -1598,9 +1607,11 @@ router.post('/auto', async (req: Request, res: Response) => {
             ]},
           ],
         },
-        select: { id: true, acceptedPlatforms: true },
+        select: { id: true, name: true, acceptedPlatforms: true },
         orderBy: { createdAt: 'desc' }, // Most recent first
       });
+
+      console.log(`[Submission] Found ${activePublicCampaigns.length} active public campaigns`);
 
       let finalCampaignId = campaignId || null;
       
@@ -1613,6 +1624,8 @@ router.post('/auto', async (req: Request, res: Response) => {
         });
         const userCampaignIds = new Set(userMemberships.map(m => m.campaignId));
 
+        console.log(`[Submission] User is already a member of ${userCampaignIds.size} campaigns`);
+
         // Try to auto-join user to campaigns and find the best one to link
         for (const campaign of activePublicCampaigns) {
           // Check if platform is allowed (if restrictions exist)
@@ -1624,6 +1637,7 @@ router.post('/auto', async (req: Request, res: Response) => {
             
             if (Array.isArray(acceptedPlatforms) && !acceptedPlatforms.includes('INSTAGRAM')) {
               canJoin = false;
+              console.log(`[Submission] Campaign ${campaign.name} (${campaign.id}) does not accept INSTAGRAM`);
             }
           }
 
@@ -1638,11 +1652,11 @@ router.post('/auto', async (req: Request, res: Response) => {
                   },
                 });
                 userCampaignIds.add(campaign.id);
-                console.log(`[Auto-Join] Auto-joined user ${userId} to campaign ${campaign.id} when submitting`);
+                console.log(`[Auto-Join] ✅ Auto-joined user ${userId} to campaign ${campaign.name} (${campaign.id}) when submitting`);
               } catch (error: any) {
                 // Already a member or other error, continue
                 if (error.code !== 'P2002') { // Ignore unique constraint errors
-                  console.log(`[Auto-Join] Could not join campaign ${campaign.id}:`, error);
+                  console.error(`[Auto-Join] ❌ Could not join campaign ${campaign.id}:`, error);
                 }
               }
             }
@@ -1650,9 +1664,14 @@ router.post('/auto', async (req: Request, res: Response) => {
             // Link to the first matching campaign (most recent)
             if (!finalCampaignId) {
               finalCampaignId = campaign.id;
+              console.log(`[Submission] ✅ Linked submission to campaign ${campaign.name} (${campaign.id})`);
             }
           }
         }
+      } else if (finalCampaignId) {
+        console.log(`[Submission] Using provided campaignId: ${finalCampaignId}`);
+      } else {
+        console.log(`[Submission] ⚠️ No active campaigns found to link submission`);
       }
 
       // Create submission
