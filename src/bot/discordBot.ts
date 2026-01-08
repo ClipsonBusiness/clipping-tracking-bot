@@ -3045,6 +3045,10 @@ export async function registerCommands() {
   const commandsData = [
     // Clipper commands
     new SlashCommandBuilder()
+      .setName('start')
+      .setDescription('Get started with the bot - shows how to operate it'),
+
+    new SlashCommandBuilder()
       .setName('verify')
       .setDescription('Verify a social media account')
       .addStringOption((option: any) =>
