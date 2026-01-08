@@ -137,9 +137,7 @@ const commands = {
         },
         {
           name: '📤 Step 2: Submit Content',
-          value: 'Once verified, use `/submit-clip <url>` to submit your content.\n' +
-                 '**Example:** `/submit-clip https://youtube.com/watch?v=...`\n' +
-                 'The bot will automatically detect the platform!',
+          value: 'Once verified, use `/submit-clip <url>` to submit your content.',
           inline: false,
         },
         {
