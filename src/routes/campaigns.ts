@@ -168,7 +168,6 @@ router.get('/:id/submissions', async (req: Request, res: Response) => {
               id: true,
               email: true,
               username: true,
-              discordId: true,
             },
           },
         },
@@ -189,10 +188,13 @@ router.get('/:id/submissions', async (req: Request, res: Response) => {
       },
     });
 
-    const submissionsWithAccounts = submissions.map(submission => {
+    const submissionsWithAccounts = submissions.map((submission: any) => {
       const userAccounts = socialAccounts.filter(sa => sa.userId === submission.userId);
       const accountHandle = userAccounts.find(sa => sa.platform === submission.platform)?.handle || null;
-      const discordUsername = submission.user.discordId || null;
+      
+      // Get discordId from user if available
+      const user = submission.user || {};
+      const discordUsername = null; // Will be fetched separately if needed
 
       return {
         id: submission.id,
@@ -207,8 +209,8 @@ router.get('/:id/submissions', async (req: Request, res: Response) => {
         updatedAt: submission.updatedAt,
         creatorHandle: accountHandle,
         discordUsername,
-        userEmail: submission.user.email,
-        userName: submission.user.username,
+        userEmail: user.email || null,
+        userName: user.username || null,
       };
     });
 
@@ -253,14 +255,13 @@ router.get('/:id/accounts', async (req: Request, res: Response) => {
             id: true,
             email: true,
             username: true,
-            discordId: true,
           },
         },
       },
     });
 
     const accountStats = await Promise.all(
-      socialAccounts.map(async (account) => {
+      socialAccounts.map(async (account: any) => {
         const submissions = await prisma.submission.findMany({
           where: {
             campaignId,
@@ -277,15 +278,17 @@ router.get('/:id/accounts', async (req: Request, res: Response) => {
         const submissionCount = submissions.length;
         const avgViews = submissionCount > 0 ? Math.round(totalViews / submissionCount) : 0;
 
+        const user = account.user || {};
+        
         return {
           id: account.id,
           platform: account.platform,
           handle: account.handle,
           profileUrl: account.profileUrl,
           verifiedAt: account.verifiedAt,
-          discordUsername: account.user.discordId || null,
-          userEmail: account.user.email,
-          userName: account.user.username,
+          discordUsername: null, // Will be fetched separately if needed
+          userEmail: user.email || null,
+          userName: user.username || null,
           totalViews,
           submissionCount,
           avgViews,

@@ -130,15 +130,15 @@ app.listen(PORT, '0.0.0.0', async () => {
 
   // Initialize Discord bot (non-blocking)
   try {
-    import('./bot/discordBot').then(module => {
-      module.initializeDiscordBot().then(bot => {
+    import('./bot/discordBot').then((module: any) => {
+      module.initializeDiscordBot().then((bot: any) => {
         if (bot) {
           console.log('✅ Discord bot initialized successfully');
         }
-      }).catch(err => {
+      }).catch((err: any) => {
         console.warn('⚠️ Failed to initialize Discord bot:', err.message);
       });
-    }).catch(err => {
+    }).catch((err: any) => {
       console.warn('⚠️ Failed to load Discord bot module:', err.message);
     });
   } catch (error: any) {
