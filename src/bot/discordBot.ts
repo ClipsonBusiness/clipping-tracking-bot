@@ -126,12 +126,42 @@ const commands = {
 
     const platform = interaction.options.getString('platform', true).toUpperCase();
     const username = interaction.options.getString('username', true);
-    const userId = await getUserIdFromDiscord(interaction.user.id);
+    let userId = await getUserIdFromDiscord(interaction.user.id);
 
+    // If user not found by Discord ID, try to find or create by email/Discord username
     if (!userId) {
-      return interaction.editReply({
-        content: '❌ You need to link your Discord account first. Use `/link <email>` to link your account.',
-      });
+      try {
+        const prisma = getPrismaClient();
+        // Try to find user by email matching Discord username pattern
+        const discordEmail = `${interaction.user.id}@discord.local`;
+        let user = await prisma.user.findUnique({ where: { email: discordEmail } }) as any;
+        
+        if (!user) {
+          // Create a new user with Discord ID
+          user = await prisma.user.create({
+            data: {
+              email: discordEmail,
+              username: interaction.user.username,
+              role: 'CLIPPER',
+              discordId: interaction.user.id,
+            },
+          });
+          console.log(`[Discord Bot] Created new user for Discord ID ${interaction.user.id}`);
+        } else if (!user.discordId) {
+          // Link existing user to Discord ID
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { discordId: interaction.user.id },
+          });
+          console.log(`[Discord Bot] Linked Discord ID ${interaction.user.id} to existing user ${user.id}`);
+        }
+        userId = user.id;
+      } catch (error) {
+        console.error('[Discord Bot] Error creating/linking user:', error);
+        return interaction.editReply({
+          content: '❌ Error setting up your account. Please contact an admin.',
+        });
+      }
     }
 
     if (!interaction.guildId) {
