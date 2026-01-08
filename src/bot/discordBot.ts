@@ -175,6 +175,12 @@ const commands = {
       const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3001}`;
 
       // Create social account
+      if (!userId) {
+        return interaction.editReply({
+          content: '❌ Error: User ID not found. Please try again.',
+        });
+      }
+
       const createResponse = await fetch(`${baseUrl}/api/social-accounts/${platform.toLowerCase()}`, {
         method: 'POST',
         headers: {
