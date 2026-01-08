@@ -286,7 +286,31 @@ router.get('/:id/accounts', async (req: Request, res: Response) => {
 
         const user = account.user || {};
         // Use stored Discord username directly from User model
-        const discordUsername = user.discordUsername || null;
+        let discordUsername = user.discordUsername || null;
+        
+        // If username is missing but discordId exists, try to fetch it from Discord client
+        if (!discordUsername && user.discordId) {
+          try {
+            // Try to import and use Discord client if available
+            const { default: discordClient } = await import('../bot/discordBot');
+            if (discordClient && discordClient.isReady()) {
+              const discordUser = await discordClient.users.fetch(user.discordId).catch(() => null);
+              if (discordUser) {
+                discordUsername = discordUser.username || discordUser.tag || null;
+                // Update the database for future use
+                if (discordUsername) {
+                  await prisma.user.update({
+                    where: { id: user.id },
+                    data: { discordUsername },
+                  }).catch(() => {}); // Don't fail if update fails
+                  console.log(`[Campaign Accounts] Fetched and stored Discord username for user ${user.id}: ${discordUsername}`);
+                }
+              }
+            }
+          } catch (error) {
+            console.warn(`[Campaign Accounts] Could not fetch Discord username for ${user.discordId}:`, error);
+          }
+        }
         
         console.log(`[Campaign Accounts] Account ${account.handle} (${account.platform}): discordUsername=${discordUsername || 'N/A'}`);
         
