@@ -334,6 +334,7 @@
             padding: 20px;
             margin-bottom: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
         }
         .filters-header {
             display: flex;
@@ -352,19 +353,60 @@
         .filter-input {
             flex: 1;
             min-width: 200px;
-            padding: 10px;
+            padding: 10px 15px;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
+            font-size: 14px;
         }
         .filter-select {
-            padding: 10px;
+            padding: 10px 15px;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
             background: white;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .filter-sort-btn {
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .filter-sort-btn:hover {
+            background: #f5f5f5;
+        }
+        .export-data-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .export-data-btn:hover {
+            background: #5568d3;
+        }
+        .filter-count {
+            margin-top: 15px;
+            color: #666;
+            font-size: 14px;
         }
         .content-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 20px;
         }
         .content-card {
@@ -372,68 +414,139 @@
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .content-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
         .content-card-header {
-            padding: 15px;
+            padding: 12px 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            background: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
         }
         .content-platform {
-            padding: 4px 8px;
+            padding: 4px 10px;
             background: #f0f0f0;
-            border-radius: 4px;
+            border-radius: 6px;
             font-size: 11px;
             font-weight: 600;
-            color: #666;
+            color: #333;
+            text-transform: capitalize;
         }
         .content-status {
-            padding: 4px 8px;
+            padding: 4px 10px;
             background: #10b981;
             color: white;
-            border-radius: 4px;
+            border-radius: 6px;
             font-size: 11px;
             font-weight: 600;
+        }
+        .content-thumbnail-container {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            background: #f0f0f0;
+            overflow: hidden;
         }
         .content-thumbnail {
             width: 100%;
-            height: 200px;
+            height: 100%;
             object-fit: cover;
-            background: #f0f0f0;
+        }
+        .content-thumbnail-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.3);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .content-card:hover .content-thumbnail-overlay {
+            opacity: 1;
+        }
+        .content-play-button {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #333;
+        }
+        .content-platform-logo {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 24px;
+            height: 24px;
+            background: rgba(0,0,0,0.6);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: white;
+            font-weight: 600;
+        }
+        .content-profile-pic {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
         }
         .content-body {
             padding: 15px;
         }
-        .content-creator {
-            color: #666;
-            font-size: 12px;
-            margin-bottom: 8px;
-        }
-        .content-title {
-            font-weight: 600;
+        .content-account {
             color: #333;
-            margin-bottom: 12px;
-            font-size: 14px;
-            line-height: 1.4;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 4px;
         }
-        .content-source {
+        .content-discord {
             color: #666;
-            font-size: 12px;
+            font-size: 11px;
             margin-bottom: 12px;
         }
         .content-metrics {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
+            gap: 12px;
             margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e5e7eb;
         }
         .content-metric {
             text-align: center;
         }
+        .content-metric-icon {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
         .content-metric-value {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             color: #333;
+            margin-bottom: 2px;
         }
         .content-metric-label {
             font-size: 10px;
@@ -441,13 +554,13 @@
         }
         .content-engagement {
             text-align: center;
-            padding: 8px;
+            padding: 10px;
             background: #f3f4f6;
             border-radius: 6px;
             margin-bottom: 12px;
         }
         .content-engagement-value {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 700;
             color: #8b5cf6;
         }
@@ -691,6 +804,10 @@
                         <span>🔍</span>
                         Filter & Sort Content
                     </div>
+                    <button class="export-data-btn" onclick="exportContentData()">
+                        <span>📥</span>
+                        Export Data
+                    </button>
                     <div class="filters-row">
                         <input type="text" class="filter-input" id="contentSearch" placeholder="Search creators, platforms..." onkeyup="filterContent()">
                         <select class="filter-select" id="platformFilter" onchange="filterContent()">
@@ -706,13 +823,17 @@
                             <option value="REJECTED">Rejected</option>
                         </select>
                         <select class="filter-select" id="sortFilter" onchange="filterContent()">
-                            <option value="date-desc">Upload Date (Newest)</option>
+                            <option value="date-desc">Upload Date</option>
                             <option value="date-asc">Upload Date (Oldest)</option>
                             <option value="views-desc">Views (High to Low)</option>
                             <option value="views-asc">Views (Low to High)</option>
                         </select>
+                        <button class="filter-sort-btn" id="sortOrderBtn" onclick="toggleSortOrder()">
+                            <span>🔽</span>
+                            Descending
+                        </button>
                     </div>
-                    <div style="margin-top: 15px; color: #666; font-size: 14px;">
+                    <div class="filter-count">
                         Showing <span id="contentCountDisplay">0</span> of <span id="contentTotalDisplay">0</span> items
                     </div>
                 </div>
@@ -932,42 +1053,54 @@
                     ? ((submission.latestLikes + submission.latestComments + submission.latestShares) / submission.latestViews * 100).toFixed(2)
                     : '0.00';
 
+                // Get platform logo/icon
+                const platformLogo = submission.platform === 'YOUTUBE' ? 'YT' : 
+                                   submission.platform === 'TIKTOK' ? 'TT' : 
+                                   submission.platform === 'INSTAGRAM' ? 'IG' : '';
+
+                // Get thumbnail URL (if available from submission, otherwise use placeholder)
+                const thumbnailUrl = submission.thumbnailUrl || 'https://via.placeholder.com/300x200?text=Video';
+
                 card.innerHTML = `
                     <div class="content-card-header">
                         <span class="content-platform">${submission.platform}</span>
-                        <span class="content-status">${submission.status}</span>
+                        <span class="content-status">Active</span>
+                    </div>
+                    <div class="content-thumbnail-container" onclick="window.open('${submission.canonicalUrl}', '_blank')">
+                        <img src="${thumbnailUrl}" alt="Video thumbnail" class="content-thumbnail" onerror="this.src='https://via.placeholder.com/300x200?text=Video'">
+                        <div class="content-thumbnail-overlay">
+                            <div class="content-play-button">▶</div>
+                        </div>
+                        <div class="content-platform-logo">${platformLogo}</div>
+                        <div class="content-profile-pic">+</div>
                     </div>
                     <div class="content-body">
-                        <div class="content-creator">${submission.creatorHandle || submission.userName || submission.userEmail}</div>
-                        <div class="content-creator" style="font-size: 11px; color: #999;">Discord: ${submission.discordUsername || 'N/A'}</div>
-                        <div class="content-title">${extractVideoTitle(submission.canonicalUrl)}</div>
-                        <div class="content-source">Source: ${submission.canonicalUrl ? new URL(submission.canonicalUrl).hostname : 'N/A'}</div>
+                        <div class="content-account">${submission.creatorHandle ? '@' + submission.creatorHandle : submission.userName || submission.userEmail || 'Unknown'}</div>
+                        <div class="content-discord">${submission.discordUsername || 'N/A'}</div>
                         <div class="content-metrics">
                             <div class="content-metric">
+                                <div class="content-metric-icon">👁️</div>
                                 <div class="content-metric-value">${submission.latestViews.toLocaleString()}</div>
                                 <div class="content-metric-label">Views</div>
                             </div>
                             <div class="content-metric">
+                                <div class="content-metric-icon">❤️</div>
                                 <div class="content-metric-value">${submission.latestLikes.toLocaleString()}</div>
                                 <div class="content-metric-label">Likes</div>
                             </div>
                             <div class="content-metric">
+                                <div class="content-metric-icon">💬</div>
                                 <div class="content-metric-value">${submission.latestComments.toLocaleString()}</div>
                                 <div class="content-metric-label">Comments</div>
                             </div>
                             <div class="content-metric">
+                                <div class="content-metric-icon">📤</div>
                                 <div class="content-metric-value">${submission.latestShares.toLocaleString()}</div>
                                 <div class="content-metric-label">Shares</div>
                             </div>
                         </div>
                         <div class="content-engagement">
                             <div class="content-engagement-value">Engagement: ${engagement}%</div>
-                        </div>
-                        <div style="color: #666; font-size: 11px; margin-bottom: 12px;">
-                            Uploaded: ${new Date(submission.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                            ${submission.updatedAt && submission.updatedAt !== submission.createdAt 
-                                ? ' • Updated: ' + new Date(submission.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                                : ''}
                         </div>
                         <div class="content-actions">
                             <button class="btn-secondary" onclick="window.open('${submission.canonicalUrl}', '_blank')">
@@ -1028,11 +1161,17 @@
 
             // Apply sorting
             filtered.sort((a, b) => {
-                if (sort === 'date-desc') return new Date(b.createdAt) - new Date(a.createdAt);
-                if (sort === 'date-asc') return new Date(a.createdAt) - new Date(b.createdAt);
-                if (sort === 'views-desc') return (b.latestViews || 0) - (a.latestViews || 0);
-                if (sort === 'views-asc') return (a.latestViews || 0) - (b.latestViews || 0);
-                return 0;
+                let result = 0;
+                if (sort === 'date-desc' || sort === 'date-asc') {
+                    result = new Date(b.createdAt) - new Date(a.createdAt);
+                    if (sort === 'date-asc') result = -result;
+                } else if (sort === 'views-desc' || sort === 'views-asc') {
+                    result = (b.latestViews || 0) - (a.latestViews || 0);
+                    if (sort === 'views-asc') result = -result;
+                }
+                // Apply sort order (descending/ascending)
+                if (sortOrder === 'asc') result = -result;
+                return result;
             });
 
             renderContent(filtered);
@@ -1176,6 +1315,47 @@
             // Update tab content
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             document.getElementById(tabName + 'Tab').classList.add('active');
+        }
+
+        // Toggle sort order
+        let sortOrder = 'desc';
+        function toggleSortOrder() {
+            sortOrder = sortOrder === 'desc' ? 'asc' : 'desc';
+            const btn = document.getElementById('sortOrderBtn');
+            btn.innerHTML = sortOrder === 'desc' 
+                ? '<span>🔽</span> Descending'
+                : '<span>🔼</span> Ascending';
+            filterContent();
+        }
+
+        // Export content data
+        function exportContentData() {
+            const data = allSubmissions.map(s => ({
+                Platform: s.platform,
+                Account: s.creatorHandle || s.userName || s.userEmail,
+                Discord: s.discordUsername || 'N/A',
+                URL: s.canonicalUrl,
+                Views: s.latestViews,
+                Likes: s.latestLikes,
+                Comments: s.latestComments,
+                Shares: s.latestShares,
+                Engagement: ((s.latestLikes + s.latestComments + s.latestShares) / (s.latestViews || 1) * 100).toFixed(2) + '%',
+                Status: s.status,
+                Created: new Date(s.createdAt).toLocaleDateString()
+            }));
+
+            const csv = [
+                Object.keys(data[0]).join(','),
+                ...data.map(row => Object.values(row).map(v => `"${v}"`).join(','))
+            ].join('\n');
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `campaign-content-${currentCampaignId}-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
         }
 
         // Placeholder functions
