@@ -43,3 +43,4 @@ Thumbs.db
 
 # Vercel
 .vercel
+.env.bak
