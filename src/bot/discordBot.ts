@@ -1959,6 +1959,84 @@ client.on('interactionCreate', async (interaction: any) => {
             verifyData,
           });
 
+          // If verified, automatically add user to active campaigns and link existing submissions
+          if (isVerified) {
+            try {
+              const now = new Date();
+              // Get all active campaigns
+              const activeCampaigns = await prisma.campaign.findMany({
+                where: {
+                  status: 'ACTIVE',
+                  campaignType: 'PUBLIC', // Only auto-join public campaigns
+                  OR: [
+                    { startDate: null },
+                    { startDate: { lte: now } },
+                  ],
+                  AND: [
+                    { OR: [
+                      { endDate: null },
+                      { endDate: { gte: now } },
+                    ]},
+                  ],
+                },
+                select: { id: true, name: true, acceptedPlatforms: true },
+              });
+
+              for (const campaign of activeCampaigns) {
+                // Check if platform is allowed (if restrictions exist)
+                let canJoin = true;
+                if (campaign.acceptedPlatforms) {
+                  const acceptedPlatforms = typeof campaign.acceptedPlatforms === 'string' 
+                    ? JSON.parse(campaign.acceptedPlatforms) 
+                    : campaign.acceptedPlatforms;
+                  
+                  if (Array.isArray(acceptedPlatforms) && !acceptedPlatforms.includes(account.platform)) {
+                    canJoin = false;
+                  }
+                }
+
+                if (canJoin) {
+                  // Check if already a member
+                  const existing = await prisma.campaignMember.findUnique({
+                    where: {
+                      userId_campaignId: {
+                        userId,
+                        campaignId: campaign.id,
+                      },
+                    },
+                  });
+
+                  if (!existing) {
+                    // Auto-join the campaign
+                    await prisma.campaignMember.create({
+                      data: {
+                        userId,
+                        campaignId: campaign.id,
+                      },
+                    });
+                    console.log(`[Auto-Join] Added user ${userId} to campaign ${campaign.name}`);
+
+                    // Link existing submissions without campaignId to this campaign
+                    await prisma.submission.updateMany({
+                      where: {
+                        userId,
+                        campaignId: null,
+                        platform: account.platform,
+                        status: { in: ['PENDING', 'APPROVED'] },
+                      },
+                      data: {
+                        campaignId: campaign.id,
+                      },
+                    });
+                  }
+                }
+              }
+            } catch (autoJoinError) {
+              console.error('[Auto-Join] Error auto-joining campaigns:', autoJoinError);
+              // Don't fail verification if auto-join fails
+            }
+          }
+
           // Get guild config and update message
           const guildConfig = await getGuildConfig(interaction.guildId);
           const approvalChannelId = guildConfig.clipperApprovalChannelId;
@@ -2044,10 +2122,104 @@ client.on('interactionCreate', async (interaction: any) => {
         const accountId = interaction.customId.replace('verify_override_', '');
         // Admin override verification
         const prisma = getPrismaClient();
+        const account = await prisma.socialAccount.findUnique({
+          where: { id: accountId },
+          select: { userId: true, platform: true },
+        });
+
+        if (!account) {
+          return interaction.reply({ content: '❌ Account not found.', ephemeral: true });
+        }
+
         await prisma.socialAccount.update({
           where: { id: accountId },
           data: { status: 'VERIFIED', verifiedAt: new Date() },
         });
+
+        // Auto-join user to active campaigns and link existing submissions
+        try {
+          const now = new Date();
+          // Get all active campaigns
+          const activeCampaigns = await prisma.campaign.findMany({
+            where: {
+              status: 'ACTIVE',
+              campaignType: 'PUBLIC', // Only auto-join public campaigns
+              OR: [
+                { startDate: null },
+                { startDate: { lte: now } },
+              ],
+              AND: [
+                { OR: [
+                  { endDate: null },
+                  { endDate: { gte: now } },
+                ]},
+              ],
+            },
+            select: { id: true, name: true, acceptedPlatforms: true },
+          });
+
+          for (const campaign of activeCampaigns) {
+            // Check if platform is allowed (if restrictions exist)
+            let canJoin = true;
+            if (campaign.acceptedPlatforms) {
+              const acceptedPlatforms = typeof campaign.acceptedPlatforms === 'string' 
+                ? JSON.parse(campaign.acceptedPlatforms) 
+                : campaign.acceptedPlatforms;
+              
+              if (Array.isArray(acceptedPlatforms) && !acceptedPlatforms.includes(account.platform)) {
+                canJoin = false;
+              }
+            }
+
+            if (canJoin) {
+              // Check if already a member
+              const existing = await prisma.campaignMember.findUnique({
+                where: {
+                  userId_campaignId: {
+                    userId: account.userId,
+                    campaignId: campaign.id,
+                  },
+                },
+              });
+
+              if (!existing) {
+                // Auto-join the campaign
+                await prisma.campaignMember.create({
+                  data: {
+                    userId: account.userId,
+                    campaignId: campaign.id,
+                  },
+                });
+                console.log(`[Auto-Join] Added user ${account.userId} to campaign ${campaign.name}`);
+
+                // Link existing submissions without campaignId to this campaign
+                await prisma.submission.updateMany({
+                  where: {
+                    userId: account.userId,
+                    campaignId: null,
+                    platform: account.platform,
+                    status: { in: ['PENDING', 'APPROVED'] },
+                  },
+                  data: {
+                    campaignId: campaign.id,
+                  },
+                });
+              }
+            }
+          }
+        } catch (autoJoinError) {
+          console.error('[Auto-Join] Error auto-joining campaigns:', autoJoinError);
+          // Don't fail verification if auto-join fails
+        }
+
+        // Assign Clipper role if in a guild
+        if (interaction.guildId) {
+          try {
+            await assignClipperRole(interaction.guildId, interaction.user.id);
+          } catch (roleError) {
+            console.error('[Verification] Error assigning role:', roleError);
+          }
+        }
 
         await interaction.reply({ content: '✅ Verification manually approved.', ephemeral: true });
         await interaction.message.edit({ components: [] });
