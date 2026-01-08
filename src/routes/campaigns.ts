@@ -22,14 +22,21 @@ const getDiscordUsername = async (discordId: string | null): Promise<string | nu
     });
     
     if (!response.ok) {
-      console.warn(`Failed to fetch Discord user ${discordId}: ${response.status} ${response.statusText}`);
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.warn(`Failed to fetch Discord user ${discordId}: ${response.status} ${response.statusText} - ${errorText}`);
+      
+      // If it's a 401, the token might be invalid
+      if (response.status === 401) {
+        console.error('⚠️ Discord API returned 401 - DISCORD_BOT_TOKEN may be invalid or expired');
+      }
+      
       return null;
     }
     
     const user = await response.json() as { username?: string; discriminator?: string };
     // Discord usernames are now just the username (no discriminator in new system)
     const username = user.username || null;
-    console.log(`Fetched Discord username for ${discordId}: ${username}`);
+    console.log(`✅ Fetched Discord username for ${discordId}: ${username}`);
     return username;
   } catch (error) {
     console.error(`Error fetching Discord username for ${discordId}:`, error);
@@ -350,7 +357,13 @@ router.get('/:id/accounts', async (req: Request, res: Response) => {
         const user = account.user || {};
         const discordUsername = user.discordId ? discordUsernameMap.get(user.discordId) || null : null;
         
-        console.log(`[Campaign Accounts] Account ${account.handle} (${account.platform}): discordId=${user.discordId}, discordUsername=${discordUsername}`);
+        if (!user.discordId) {
+          console.warn(`[Campaign Accounts] ⚠️ Account ${account.handle} (${account.platform}) has no discordId - user may need to verify through Discord`);
+        } else if (!discordUsername) {
+          console.warn(`[Campaign Accounts] ⚠️ Account ${account.handle} (${account.platform}) has discordId ${user.discordId} but username fetch returned null`);
+        }
+        
+        console.log(`[Campaign Accounts] Account ${account.handle} (${account.platform}): discordId=${user.discordId || 'NONE'}, discordUsername=${discordUsername || 'N/A'}`);
         
         return {
           id: account.id,
