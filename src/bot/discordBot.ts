@@ -1995,20 +1995,30 @@ client.on('interactionCreate', async (interaction: any) => {
             verifyData,
           });
 
-          // If verified, ensure Discord ID is linked to user account
+          // If verified, store Discord username and ID
           if (isVerified && userId) {
             try {
-              // Update user's discordId if not already set
+              // Update user's discordId and discordUsername
+              const discordUsername = interaction.user.username || interaction.user.tag || null;
               const user = await prisma.user.findUnique({ where: { id: userId } }) as any;
-              if (user && !user.discordId) {
+              
+              const updateData: any = {};
+              if (!user.discordId) {
+                updateData.discordId = interaction.user.id;
+              }
+              if (!user.discordUsername || user.discordUsername !== discordUsername) {
+                updateData.discordUsername = discordUsername;
+              }
+              
+              if (Object.keys(updateData).length > 0) {
                 await prisma.user.update({
                   where: { id: userId },
-                  data: { discordId: interaction.user.id },
+                  data: updateData,
                 });
-                console.log(`[Discord Bot] Linked Discord ID ${interaction.user.id} to user ${userId}`);
+                console.log(`[Discord Bot] Updated user ${userId} with Discord info: ${discordUsername} (${interaction.user.id})`);
               }
             } catch (error) {
-              console.error('[Discord Bot] Error linking Discord ID:', error);
+              console.error('[Discord Bot] Error updating Discord info:', error);
             }
           }
 

@@ -18,6 +18,7 @@ model User {
   password            String? // Hashed password (optional for OAuth users)
   role                String           @default("CLIPPER") // CLIPPER | ADMIN
   discordId           String?          @unique // Discord user ID for bot integration
+  discordUsername     String? // Discord username (e.g., @tomasjr200)
   createdAt           DateTime         @default(now())
   socialAccounts      SocialAccount[]
   submissions         Submission[]

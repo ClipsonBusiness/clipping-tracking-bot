@@ -4,46 +4,6 @@ import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
 
-// Helper function to fetch Discord username from Discord ID
-const getDiscordUsername = async (discordId: string | null): Promise<string | null> => {
-  if (!discordId) return null;
-  
-  try {
-    const botToken = process.env.DISCORD_BOT_TOKEN;
-    if (!botToken) {
-      console.warn('DISCORD_BOT_TOKEN not set, cannot fetch Discord usernames');
-      return null;
-    }
-
-    const response = await fetch(`https://discord.com/api/v10/users/${discordId}`, {
-      headers: {
-        'Authorization': `Bot ${botToken}`,
-      },
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
-      console.warn(`Failed to fetch Discord user ${discordId}: ${response.status} ${response.statusText} - ${errorText}`);
-      
-      // If it's a 401, the token might be invalid
-      if (response.status === 401) {
-        console.error('⚠️ Discord API returned 401 - DISCORD_BOT_TOKEN may be invalid or expired');
-      }
-      
-      return null;
-    }
-    
-    const user = await response.json() as { username?: string; discriminator?: string };
-    // Discord usernames are now just the username (no discriminator in new system)
-    const username = user.username || null;
-    console.log(`✅ Fetched Discord username for ${discordId}: ${username}`);
-    return username;
-  } catch (error) {
-    console.error(`Error fetching Discord username for ${discordId}:`, error);
-    return null;
-  }
-};
-
 // Public routes (no auth required)
 router.get('/:id', async (req: Request, res: Response) => {
   try {
@@ -209,6 +169,7 @@ router.get('/:id/submissions', async (req: Request, res: Response) => {
               email: true,
               username: true,
               discordId: true,
+              discordUsername: true,
             },
           },
         },
@@ -229,30 +190,14 @@ router.get('/:id/submissions', async (req: Request, res: Response) => {
       },
     });
 
-    // Fetch Discord usernames for all users with discordId
-    const usersWithDiscord = submissions
-      .map(s => s.user)
-      .filter((u: any) => u && u.discordId)
-      .map((u: any) => u.discordId);
-    
-    const uniqueDiscordIds = [...new Set(usersWithDiscord)];
-    const discordUsernameMap = new Map<string, string | null>();
-    
-    // Fetch all Discord usernames in parallel
-    await Promise.all(
-      uniqueDiscordIds.map(async (discordId) => {
-        const username = await getDiscordUsername(discordId);
-        discordUsernameMap.set(discordId, username);
-      })
-    );
-
+    // Discord usernames are now stored directly in the User model, no need to fetch
     const submissionsWithAccounts = submissions.map((submission: any) => {
       const userAccounts = socialAccounts.filter(sa => sa.userId === submission.userId);
       const accountHandle = userAccounts.find(sa => sa.platform === submission.platform)?.handle || null;
       
-      // Get discordId from user if available
+      // Use stored Discord username directly from User model
       const user = submission.user || {};
-      const discordUsername = user.discordId ? discordUsernameMap.get(user.discordId) || null : null;
+      const discordUsername = user.discordUsername || null;
 
       return {
         id: submission.id,
@@ -314,6 +259,7 @@ router.get('/:id/accounts', async (req: Request, res: Response) => {
             email: true,
             username: true,
             discordId: true,
+            discordUsername: true,
           },
         },
       },
@@ -355,15 +301,10 @@ router.get('/:id/accounts', async (req: Request, res: Response) => {
         const avgViews = submissionCount > 0 ? Math.round(totalViews / submissionCount) : 0;
 
         const user = account.user || {};
-        const discordUsername = user.discordId ? discordUsernameMap.get(user.discordId) || null : null;
+        // Use stored Discord username directly from User model
+        const discordUsername = user.discordUsername || null;
         
-        if (!user.discordId) {
-          console.warn(`[Campaign Accounts] ⚠️ Account ${account.handle} (${account.platform}) has no discordId - user may need to verify through Discord`);
-        } else if (!discordUsername) {
-          console.warn(`[Campaign Accounts] ⚠️ Account ${account.handle} (${account.platform}) has discordId ${user.discordId} but username fetch returned null`);
-        }
-        
-        console.log(`[Campaign Accounts] Account ${account.handle} (${account.platform}): discordId=${user.discordId || 'NONE'}, discordUsername=${discordUsername || 'N/A'}`);
+        console.log(`[Campaign Accounts] Account ${account.handle} (${account.platform}): discordUsername=${discordUsername || 'N/A'}`);
         
         return {
           id: account.id,
