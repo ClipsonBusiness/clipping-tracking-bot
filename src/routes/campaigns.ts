@@ -358,6 +358,7 @@ router.get('/:id/accounts', async (req: Request, res: Response) => {
           handle: account.handle,
           profileUrl: account.profileUrl,
           verifiedAt: account.verifiedAt,
+          createdAt: account.createdAt,
           discordUsername,
           userEmail: user.email || null,
           userName: user.username || null,

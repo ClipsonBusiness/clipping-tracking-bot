@@ -844,37 +844,61 @@
 
             <!-- Accounts Tab -->
             <div class="tab-content" id="accountsTab">
+                <h3 style="margin-bottom: 10px; font-size: 20px; font-weight: 600;">Social Media Accounts</h3>
+                <p style="margin-bottom: 30px; color: #666; font-size: 14px;">All social media accounts linked to creators in this campaign.</p>
+                
                 <div class="metrics-grid" style="margin-bottom: 30px;">
                     <div class="metric-card">
                         <div class="metric-label">Total Accounts</div>
                         <div class="metric-value" id="totalAccounts">0</div>
                     </div>
-                    <div class="metric-card">
+                    <div class="metric-card" style="border-left: 3px solid #10b981;">
                         <div class="metric-label">Verified Accounts</div>
-                        <div class="metric-value" id="verifiedAccounts">0</div>
+                        <div class="metric-value" style="color: #10b981;" id="verifiedAccounts">0</div>
                     </div>
                     <div class="metric-card">
                         <div class="metric-label">Platforms</div>
                         <div class="metric-value" id="platformCount">0</div>
                     </div>
-                    <div class="metric-card">
+                    <div class="metric-card" style="border-left: 3px solid #3b82f6;">
                         <div class="metric-label">Total Views</div>
-                        <div class="metric-value" id="accountsTotalViews">0</div>
+                        <div class="metric-value" style="color: #3b82f6;" id="accountsTotalViews">0</div>
                     </div>
-                    <div class="metric-card">
+                    <div class="metric-card" style="border-left: 3px solid #8b5cf6;">
                         <div class="metric-label">Total Submissions</div>
-                        <div class="metric-value" id="totalSubmissions">0</div>
+                        <div class="metric-value" style="color: #8b5cf6;" id="totalSubmissions">0</div>
                     </div>
                 </div>
+
+                <!-- Platform Performance Section -->
+                <div id="platformPerformance" style="margin-bottom: 30px;">
+                    <h4 style="margin-bottom: 20px; font-size: 16px; font-weight: 600;">Platform Performance</h4>
+                    <div id="platformPerformanceGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                        <!-- Platform cards will be inserted here -->
+                    </div>
+                </div>
+
                 <div class="filters" style="margin-bottom: 20px;">
                     <div class="filters-row">
-                        <input type="text" class="filter-input" id="accountSearch" placeholder="Search accounts..." onkeyup="filterAccounts()">
+                        <input type="text" class="filter-input" id="accountSearch" placeholder="Search accounts..." onkeyup="filterAccounts()" style="flex: 1;">
                         <select class="filter-select" id="accountPlatformFilter" onchange="filterAccounts()">
                             <option value="all">All Platforms</option>
                         </select>
                         <select class="filter-select" id="accountTypeFilter" onchange="filterAccounts()">
                             <option value="all">All Accounts</option>
                         </select>
+                        <select class="filter-select" id="accountSortFilter" onchange="filterAccounts()">
+                            <option value="views">Sort by</option>
+                            <option value="views-desc">Views (High to Low)</option>
+                            <option value="views-asc">Views (Low to High)</option>
+                            <option value="submissions-desc">Submissions (High to Low)</option>
+                            <option value="submissions-asc">Submissions (Low to High)</option>
+                            <option value="date-desc">Date (Newest)</option>
+                            <option value="date-asc">Date (Oldest)</option>
+                        </select>
+                        <button class="filter-icon-btn" onclick="filterAccounts()" style="padding: 8px 12px; background: #f0f0f0; border: none; border-radius: 6px; cursor: pointer;">
+                            <span>🔽</span>
+                        </button>
                     </div>
                 </div>
                 <div class="accounts-grid" id="accountsGrid">
@@ -1218,6 +1242,9 @@
                 document.getElementById('accountsTotalViews').textContent = data.statistics.totalViews.toLocaleString();
                 document.getElementById('totalSubmissions').textContent = data.statistics.totalSubmissions;
 
+                // Render platform performance
+                renderPlatformPerformance(data.platformBreakdown);
+
                 // Update platform filter
                 const platformFilter = document.getElementById('accountPlatformFilter');
                 platformFilter.innerHTML = '<option value="all">All Platforms</option>';
@@ -1235,6 +1262,42 @@
             }
         }
 
+        // Render platform performance
+        function renderPlatformPerformance(platformBreakdown) {
+            const grid = document.getElementById('platformPerformanceGrid');
+            grid.innerHTML = '';
+
+            Object.keys(platformBreakdown).forEach(platform => {
+                const stats = platformBreakdown[platform];
+                const card = document.createElement('div');
+                card.className = 'platform-performance-card';
+                
+                card.innerHTML = `
+                    <div class="platform-performance-title">${platform}</div>
+                    <div class="platform-performance-stats">
+                        <div class="platform-performance-stat">
+                            <div class="platform-performance-stat-value">${stats.totalAccounts}</div>
+                            <div class="platform-performance-stat-label">Accounts</div>
+                            <div style="font-size: 10px; color: #999; margin-top: 4px;">${stats.verifiedAccounts} verified</div>
+                        </div>
+                        <div class="platform-performance-stat">
+                            <div class="platform-performance-stat-value">${stats.totalViews.toLocaleString()}</div>
+                            <div class="platform-performance-stat-label">Total Views</div>
+                        </div>
+                        <div class="platform-performance-stat">
+                            <div class="platform-performance-stat-value submissions">${stats.totalSubmissions}</div>
+                            <div class="platform-performance-stat-label">Submissions</div>
+                        </div>
+                        <div class="platform-performance-stat">
+                            <div class="platform-performance-stat-value avg">${stats.avgViewsPerSubmission.toLocaleString()}</div>
+                            <div class="platform-performance-stat-label">Avg Views/Submission</div>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
         // Render accounts
         function renderAccounts(accounts) {
             const grid = document.getElementById('accountsGrid');
@@ -1249,34 +1312,40 @@
                 const card = document.createElement('div');
                 card.className = 'account-card';
                 
+                const addedDate = account.createdAt 
+                    ? new Date(account.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                    : 'N/A';
+                
                 card.innerHTML = `
                     <div class="account-header">
                         <span class="account-platform">${account.platform}</span>
                         <span class="account-verified">Verified</span>
                     </div>
-                    <div class="account-handle">${account.handle}</div>
-                    <div class="account-discord">Discord: ${account.discordUsername || 'N/A'}</div>
+                    <div class="account-handle">@${account.handle}</div>
+                    <div class="account-discord">${account.discordUsername || 'N/A'}</div>
                     <div class="account-metrics">
                         <div class="account-metric">
                             <div class="account-metric-value">${account.totalViews.toLocaleString()}</div>
                             <div class="account-metric-label">Total Views</div>
                         </div>
                         <div class="account-metric">
-                            <div class="account-metric-value">${account.submissionCount}</div>
+                            <div class="account-metric-value submissions">${account.submissionCount}</div>
                             <div class="account-metric-label">Submissions</div>
                         </div>
                     </div>
-                    <div style="text-align: center; color: #8b5cf6; font-size: 12px; margin-bottom: 15px;">
+                    <div class="account-avg-views">
                         ${account.avgViews.toLocaleString()} avg views/submission
                     </div>
+                    <div class="account-date">Added: ${addedDate}</div>
                     <div class="account-actions">
-                        <button class="btn-secondary" onclick="editAccount('${account.id}')">
-                            <span>✏️</span>
-                            Edit
+                        <button class="account-action-btn" onclick="editAccount('${account.id}')" title="Edit">
+                            ✏️
                         </button>
-                        <button class="btn-secondary" onclick="deleteAccount('${account.id}')">
-                            <span>🗑️</span>
-                            Delete
+                        <button class="account-action-btn" onclick="window.open('${account.profileUrl || '#'}', '_blank')" title="View Profile">
+                            ↗️
+                        </button>
+                        <button class="account-action-btn" onclick="deleteAccount('${account.id}')" title="Delete" style="color: #ef4444;">
+                            🗑️
                         </button>
                     </div>
                 `;
@@ -1288,6 +1357,7 @@
         function filterAccounts() {
             const search = document.getElementById('accountSearch').value.toLowerCase();
             const platform = document.getElementById('accountPlatformFilter').value;
+            const sort = document.getElementById('accountSortFilter').value;
 
             let filtered = [...allAccounts];
 
@@ -1301,6 +1371,26 @@
 
             if (platform !== 'all') {
                 filtered = filtered.filter(a => a.platform === platform);
+            }
+
+            // Sort accounts
+            if (sort && sort !== 'views') {
+                if (sort === 'views-desc') {
+                    filtered.sort((a, b) => b.totalViews - a.totalViews);
+                } else if (sort === 'views-asc') {
+                    filtered.sort((a, b) => a.totalViews - b.totalViews);
+                } else if (sort === 'submissions-desc') {
+                    filtered.sort((a, b) => b.submissionCount - a.submissionCount);
+                } else if (sort === 'submissions-asc') {
+                    filtered.sort((a, b) => a.submissionCount - b.submissionCount);
+                } else if (sort === 'date-desc') {
+                    filtered.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+                } else if (sort === 'date-asc') {
+                    filtered.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+                }
+            } else {
+                // Default sort by views descending
+                filtered.sort((a, b) => b.totalViews - a.totalViews);
             }
 
             renderAccounts(filtered);
