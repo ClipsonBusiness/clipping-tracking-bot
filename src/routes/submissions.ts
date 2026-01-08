@@ -1436,7 +1436,8 @@ router.post('/auto', async (req: Request, res: Response) => {
       return res.status(201).json(submission);
 
     } else if (platform === 'INSTAGRAM') {
-      const now = new Date(); // Declare once at the start of the Instagram section
+      // Declare now once at the start of the Instagram section to avoid redeclaration errors
+      const now = new Date();
       
       // Parse URL
       const parsedUrl = getInstagramCollector().parseInstagramUrl(url);
